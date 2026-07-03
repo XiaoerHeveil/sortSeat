@@ -6,10 +6,6 @@ std::string Student::getName() {
 	return name;
 }
 
-std::string Student::getClasses() {
-	return classes;
-}
-
 int Student::getAge() {
 	return age;
 }
@@ -27,10 +23,9 @@ int Student::getSeatNumber() {
 }
 
 // 打印Student类的成员信息
-void printInformation(const Student &s) {
+void printInformation(const Student &stu) {
 	std::cout << "你的信息如下：\n"
-		 << "姓名：" + s.getName() << '\n'
-		 << "班级：" + s.getClasses() << '\n'
+		 << "姓名：" + stu.getName() << '\n'
 		 << "年龄：" + s.getAge() << '\n'
 		 << "身高：" + s.getHeight() << '\n'
 		 << "体重：" + s.getWeight() << '\n'

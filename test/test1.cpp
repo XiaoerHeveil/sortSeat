@@ -1,21 +1,26 @@
-#include <iostream>
-#include <OpenXLSX.hpp>
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#include <OpenXLSX/OpenXLSX.hpp>
+#include <filesystem>
+namespace fs = std::filesystem;
 
 int main()
 {
-    // 创建一个名为 "example.xlsx" 的 Excel 文件
-    OpenXLSX::XLDocument doc;
-    doc.create("\\Excel\\AAA.xlsx", OpenXLSX::XLForceOverwrite);
+    // fs::create_directories("./Excel"); // 确保目录存在
 
-    // 获取默认工作表 "Sheet1" 并向单元格写入数据
-    auto wks = doc.workbook().worksheet("Sheet1");
-    wks.cell("A1").value() = "Hello, OpenXLSX!";
-    wks.cell("B1").value() = 42;
-
-    // 保存并关闭文件
-    doc.save();
-    doc.close();
-
-    std::cout << "Excel文件创建成功！" << std::endl;
+    try
+    {
+        OpenXLSX::XLDocument doc;
+        doc.open("D:/Temp/Excel/AAA.xlsx");
+        auto wks = doc.workbook().worksheet("Sheet1");
+        wks.cell("A1").value() = "Hello, OpenXLSX!";
+        wks.cell("B1").value() = 40;
+        doc.save();
+        doc.close();
+        std::cout << "File created successfully." << std::endl;
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Error: " << e.what() << std::endl;
+    }
     return 0;
 }
