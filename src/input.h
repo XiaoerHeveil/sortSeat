@@ -5,7 +5,12 @@
 using std::ifstream;
 using std::string;
 
-// 实际上这里可以用模板，但是我不会写
+// 实际上这里可以用类进行定义与继承，但我没有弄明白这三个之间的继承关系
+
+// 查找该行某个子字符串所在的位置
+long searchStr(ifstream &, string, int);
+// 判断是否在第一行
+bool isCurrentPositionFirstLine(ifstream &, int, char);
 
 // 文件路径转义
 string fileExtensionEscape(string path);
@@ -17,6 +22,8 @@ string getNameTXT(ifstream &);
 // 读取txt文件，返回性别
 string getSexTXT(ifstream &);
 
+// 从csv文件里将目标名称提取出来
+string telepormpterCSV(string, long, long);
 // 读取csv文件，返回姓名
 string getNameCSV(ifstream &);
 // 读取csv文件，返回性别
