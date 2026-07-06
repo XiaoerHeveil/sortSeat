@@ -2,13 +2,11 @@
 #include <string>
 #include <algorithm>
 #include <cctype>
+#include <stdexcept>
 #include "input.h"
 
 using std::getline;
 using std::streampos;
-
-using NullPathException = std::runtime_error;
-using PathIllegalException = std::runtime_error;
 
 /**
  * @brief 截取一整行作为查找范围，找出该字符所在位置
@@ -339,7 +337,7 @@ string getTitleCSV(ifstream &in, int titleNumber = 0) {
  * @param title 标题名称
  * @return int 标题列号
  */
-int getTitleCSV(ifstream &in, string title) {
+int getTitleCSV(ifstream &in, const string &title) {
     streampos curPos = in.tellg();
     if (!isCurrentPositionFirstLine(in, curPos)) {
         in.seekg(0);
@@ -357,7 +355,7 @@ int getTitleCSV(ifstream &in, string title) {
  * @param name 姓名
  * @return string 返回标题列和行所交叉的单元格所在的内容
  */
-string getCellCSV(ifstream &in, string title, string name) {
+string getCellCSV(ifstream &in, const string &title, const string &name) {
     // 记下位置
     streampos curPos = in.tellg();
     // 跳转至第二行
@@ -409,5 +407,115 @@ string getCellCSV(ifstream &in, int title, int name) {
     string line;
     getline(in, line);
     // 复位
+    in.seekg(curPos);
     return telepormpterCSV(line, title, title - 1);
+}
+
+/**
+ * @brief 解析并校验单元格地址
+ *
+ * @param rawAddress 单元格地址字符串
+ */
+void validateCellAddress(const string &rawAddress)
+{
+    // 1. 预处理：去除首尾空格，统一转为大写
+    string addr = rawAddress;
+    addr.erase(0, addr.find_first_not_of(" \t\n\r\f"));
+    addr.erase(addr.find_last_not_of(" \t\n\r\f") + 1);
+    std::transform(addr.begin(), addr.end(), addr.begin(), ::toupper);
+
+    // 地址为空
+    if (addr.empty())
+        throw InvalidCellAddressException(rawAddress, "Address is empty");
+
+    // 2. 分离列字母和行数字
+    size_t splitPos = 0;
+    while (splitPos < addr.size() && std::isalpha(addr[splitPos]))
+        ++splitPos;
+
+    // 必须有列字母，且后续必须全是数字
+    if (splitPos == 0 || splitPos == addr.size())
+    {
+        // 必须由字母和数字组成
+        throw InvalidCellAddressException(rawAddress, "Must consist of letters followed by digits");
+    }
+    for (size_t i = splitPos; i < addr.size(); ++i)
+    {
+        if (!std::isdigit(addr[i]))
+        {
+            // 包含无效字符
+            throw InvalidCellAddressException(rawAddress, "Contains invalid characters");
+        }
+    }
+
+    string colStr = addr.substr(0, splitPos);
+    string rowStr = addr.substr(splitPos);
+
+    // 3. 校验行号 (禁止前导零，且 <= 1048576)
+    if (rowStr.size() > 1 && rowStr[0] == '0')
+    {
+        // 行号不能有前导零
+        throw InvalidCellAddressException(rawAddress, "Row number cannot have leading zeros");
+    }
+    unsigned long long row = std::stoull(rowStr);
+    if (row == 0 || row > 1048576ULL)
+    {
+        // 行超出范围（1-1048576）
+        throw InvalidCellAddressException(rawAddress, "Row out of range (1-1048576)");
+    }
+
+    // 4. 校验列名 (26进制解码，必须 <= 16384)
+    unsigned long colNum = 0;
+    for (char c : colStr)
+    {
+        colNum = colNum * 26 + (c - 'A' + 1);
+        // 提前退出：如果超过最大列数，直接报错
+        if (colNum > 16384)
+        {
+            // 列超出范围（A-XFD）
+            throw InvalidCellAddressException(rawAddress, "Column out of range (A-XFD)");
+        }
+    }
+    if (colNum == 0)
+    {
+        // 列格式无效
+        throw InvalidCellAddressException(rawAddress, "Invalid column format");
+    }
+}
+
+std::tuple<OpenXLSX::XLCellValue, int> determineCellType(
+    OpenXLSX::XLWorksheet workSheet, const string &cellPosition) {
+        validateCellAddress(cellPosition);
+        // 获取单元格对象
+        auto cell = workSheet.cell(cellPosition);
+        OpenXLSX::XLCellValue cellValue = cell.value();
+
+        // 首先判断是否为空
+        if (cellValue.type() == OpenXLSX::XLValueType::Empty) {
+            return std::make_tuple(cellValue, 0);
+        } else if (cellValue.type() == OpenXLSX::XLValueType::Boolean) {
+            return std::make_tuple(cellValue, 1);
+        } else if (cellValue.type() == OpenXLSX::XLValueType::Integer) {
+            return std::make_tuple(cellValue, 2);
+        } else if (cellValue.type() == OpenXLSX::XLValueType::Float) {
+            return std::make_tuple(cellValue, 3);
+        } else if (cellValue.type() == OpenXLSX::XLValueType::Error) {
+            return std::make_tuple(cellValue, 4);
+        } else if (cellValue.type() == OpenXLSX::XLValueType::String) {
+            // 如果字符串本身是空的，也视为空
+            if (cellValue.get<std::string>().empty()) {
+                return std::make_tuple(cellValue, 0);
+            }
+            return std::make_tuple(cellValue, 5);
+        } else {
+            // 如果遇到未知类型，返回一个默认的 XLCellValue 和类型码 -1
+            return std::make_tuple(OpenXLSX::XLCellValue(), -1);
+        }
+    }
+
+string getNameXLSX(OpenXLSX::XLWorksheet workSheet, const int &whileNumber) {
+    // 从A2(2,1)开始读取姓名
+    string cellPosition = "A" + std::to_string(whileNumber + 1);
+    auto [cellValue, typeCode] = determineCellType(workSheet, cellPosition);
+    return cellValue.get<std::string>();
 }

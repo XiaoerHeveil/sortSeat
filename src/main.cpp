@@ -2,6 +2,7 @@
 #include <string>
 #include <memory>
 #include "student.h"
+#include "input.h"
 
 int main(void) {
 	using std::cout;
