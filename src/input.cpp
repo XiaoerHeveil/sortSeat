@@ -483,6 +483,72 @@ void validateCellAddress(const string &rawAddress)
     }
 }
 
+/**
+ * @brief 将单元格地址字符串转换为行列索引
+ *
+ * @param cellNumber 单元格地址字符串（如 "A1"）
+ * @return cellIndex 返回行列索引结构体
+ */
+cellIndex cellAddress(const string& cellNumber) {
+    validateCellAddress(cellNumber);
+    // 分离字母和数字
+    string addr;
+    size_t splitPos = 0;
+    while (splitPos < addr.size() && std::isalpha(addr[splitPos]))
+        ++splitPos;
+
+    string colStr = addr.substr(0, splitPos);
+    string rowStr = addr.substr(splitPos);
+
+    // 获取行号
+    int row = std::stoull(rowStr);
+    // 26进制解码
+    int colNum = 0;
+    for (char c : colStr) {
+        colNum = colNum * 26 + (c - 'A' + 1);
+    }
+
+    // 返回行号和列号
+    cellIndex cellAddr{row, colNum};
+    return cellAddr;
+}
+
+/**
+ * @brief 将行列索引转换为单元格地址字符串
+ *
+ * @param cell 行列索引结构体
+ * @return string 返回单元格地址字符串（如 "A1"）
+ */
+string cellAddress(const cellIndex& cell) {
+    // 校验行列范围
+    if (cell.row < 1 || cell.row > 1048576) {
+        throw InvalidCellAddressException(cell.row, "Row number out of range (1-1048576)");
+    }
+    if (cell.column < 1 || cell.column > 16384) {
+        throw InvalidCellAddressException(cell.column, "Column number out of range (1-16384)");
+    }
+
+    // 将列号转换为字母
+    int colNum = cell.column;
+    string colStr;
+    while (colNum > 0) {
+        colNum--; // 调整为0索引
+        char letter = 'A' + (colNum % 26);
+        colStr = letter + colStr;
+        colNum /= 26;
+    }
+
+    // 返回组合的单元格地址
+    return colStr + std::to_string(cell.row);
+}
+
+/**
+ * @brief 判断单元格的类型，并返回对应的XLCellValue和类型码
+ * 
+ * @param workSheet 工作表
+ * @param cellPosition 类型码
+ * @return std::tuple<OpenXLSX::XLCellValue, int> 
+ */
 std::tuple<OpenXLSX::XLCellValue, int> determineCellType(
     OpenXLSX::XLWorksheet workSheet, const string &cellPosition) {
         validateCellAddress(cellPosition);
@@ -513,9 +579,137 @@ std::tuple<OpenXLSX::XLCellValue, int> determineCellType(
         }
     }
 
-string getNameXLSX(OpenXLSX::XLWorksheet workSheet, const int &whileNumber) {
+/**
+ * @brief 判断单元格的类型，并返回对应的XLCellValue和类型码
+ * 
+ * @param workSheet 工作表
+ * @param rowNumber 行号
+ * @param columnNumber 列号
+ * @return std::tuple<OpenXLSX::XLCellValue, int> XLCellValue和类型码
+ */
+std::tuple<OpenXLSX::XLCellValue, int> determineCellType(
+    OpenXLSX::XLWorksheet workSheet, const int &rowNumber, const int &columnNumber) {
+        // 校验行号与列号的合法性
+        if (rowNumber < 1 || rowNumber > 1048576) {
+            throw InvalidCellAddressException(rowNumber, "Row number out of range (1-1048576)");
+        }
+        if (columnNumber < 1 || columnNumber > 16384) {
+            throw InvalidCellAddressException(columnNumber, "Column number out of range (1-16384)");
+        }
+        // 获取指定位置单元格对象
+        auto cell = workSheet.cell(rowNumber, columnNumber);
+        OpenXLSX::XLCellValue cellValue = cell.value();
+        // 根据单元格类型返回相应的值和类型码
+        if (cellValue.type() == OpenXLSX::XLValueType::Empty) {
+            return std::make_tuple(cellValue, 0);
+        } else if (cellValue.type() == OpenXLSX::XLValueType::Boolean) {
+            return std::make_tuple(cellValue, 1);
+        } else if (cellValue.type() == OpenXLSX::XLValueType::Integer) {
+            return std::make_tuple(cellValue, 2);
+        } else if (cellValue.type() == OpenXLSX::XLValueType::Float) {
+            return std::make_tuple(cellValue, 3);
+        } else if (cellValue.type() == OpenXLSX::XLValueType::Error) {
+            return std::make_tuple(cellValue, 4);
+        } else if (cellValue.type() == OpenXLSX::XLValueType::String) {
+            // 如果字符串本身是空的，也视为空
+            if (cellValue.get<std::string>().empty()) {
+                return std::make_tuple(cellValue, 0);
+            }
+            return std::make_tuple(cellValue, 5);
+        } else {
+            // 如果遇到未知类型，返回一个默认的 XLCellValue 和类型码 -1
+            return std::make_tuple(OpenXLSX::XLCellValue(), -1);
+        }
+    }
+
+/**
+ * @brief 获取工作表中指定位置的姓名
+ * @param workSheet 工作表
+ * @param whileNumber 第几次姓名
+ * @return std::string 姓名
+ */
+string getNameXLSX(OpenXLSX::XLWorksheet workSheet, const int &whileNumber = 1) {
     // 从A2(2,1)开始读取姓名
     string cellPosition = "A" + std::to_string(whileNumber + 1);
     auto [cellValue, typeCode] = determineCellType(workSheet, cellPosition);
     return cellValue.get<std::string>();
+}
+
+/**
+ * @brief 获取工作表中指定位置的性别
+ * 
+ * @param workSheet 工作表
+ * @param whileNumber 第几次性别
+ * @return string 性别
+ */
+string getSexXLSX(OpenXLSX::XLWorksheet workSheet, const int &whileNumber = 1) {
+    // 从B2(2,2)开始读取性别
+    string cellPosition = "B" + std::to_string(whileNumber + 1);
+    auto [cellValue, typeCode] = determineCellType(workSheet, cellPosition);
+    return cellValue.get<std::string>();
+}
+
+/**
+ * @brief 获取工作表中指定列位置的标题
+ * 
+ * @param workSheet 工作表
+ * @param whileNumber 第几次标题
+ * @return string 标题名
+ */
+string getTitleXLSX(OpenXLSX::XLWorksheet workSheet, const int &whileNumber = 1) {
+    // 从A3(1,3)这一行开始读取标题
+    cellIndex titleCell{whileNumber + 2, 1}; // 行号为 whileNumber + 2，列号为 1（即A列）
+    string cellPosition = cellAddress(titleCell);
+    auto [cellValue, typeCode] = determineCellType(workSheet, cellPosition);
+    return cellValue.get<std::string>();
+}
+
+/**
+ * @brief 获取工作表中指定姓名所在的行号
+ * 
+ * @param workSheet 工作表
+ * @param name 姓名
+ * @return int 行号
+ */
+int getNameRowXLSX(OpenXLSX::XLWorksheet workSheet, const string &name) {
+    // 从A2开始查找姓名
+    int row = 2; // 从第2行开始
+    while (true) {
+        cellIndex nameCell{row, 1}; // A列
+        string cellPosition = cellAddress(nameCell);
+        auto [cellValue, typeCode] = determineCellType(workSheet, cellPosition);
+        if (typeCode == 0) { // 空单元格，说明没有更多姓名
+            break;
+        }
+        if (cellValue.get<std::string>() == name) {
+            return row; // 找到姓名，返回行号
+        }
+        ++row;
+    }
+    return -1; // 未找到姓名
+}
+
+/**
+ * @brief 获取工作表中指定标题所在的列号
+ * 
+ * @param workSheet 工作表
+ * @param title 标题
+ * @return int 列号
+ */
+int getTitleColumnXLSX(OpenXLSX::XLWorksheet workSheet, const string &title) {
+    // 从C1开始查找标题
+    int column = 3; // 从第3列开始
+    while (true) {
+        cellIndex titleCell{1, column}; // 第1行
+        string cellPosition = cellAddress(titleCell);
+        auto [cellValue, typeCode] = determineCellType(workSheet, cellPosition);
+        if (typeCode == 0) { // 空单元格，说明没有更多标题
+            break;
+        }
+        if (cellValue.get<std::string>() == title) {
+            return column; // 找到标题，返回列号
+        }
+        ++column;
+    }
+    return -1; // 未找到标题
 }
