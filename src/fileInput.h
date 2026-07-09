@@ -5,6 +5,10 @@
 
 using NullPathException = std::runtime_error;
 using PathIllegalException = std::runtime_error;
+using NullFile = std::runtime_error;
+using expectationCellEmpty = std::runtime_error;
+using expectationCellTypeError = std::runtime_error;
+using formulaCellTooComplex = std::runtime_error;
 
 using std::ifstream;
 using std::string;
@@ -64,13 +68,17 @@ string getCellCSV(ifstream &, const int &, const int &);
 
 // 校验单元格地址的合法性
 void validateCellAddress(const string &rawAddress);
+// 判断是否为公式
+void verifyFormulaCell(const OpenXLSX::XLCellValue &);
+// 将单元格内容安全地转为字符串
+string cellValueToString(const OpenXLSX::XLCellValue &);
 // 处理单元格地址，字符转索引
 cellIndex cellAddress(const string &);
 // 处理单元格地址，索引转字符
 string cellAddress(const cellIndex &);
 // 读取xlsx文件，返回指定单元格内容
 std::tuple<OpenXLSX::XLCellValue, int> determineCellType(OpenXLSX::XLWorksheet, const string&);
-std::tuple<OpenXLSX::XLCellValue, int> determineCellType(OpenXLSX::XLWorksheet, const string&, const int &, const int &);
+std::tuple<OpenXLSX::XLCellValue, int> determineCellType(OpenXLSX::XLWorksheet, const int &, const int &);
 // 读取xlsx文件，返回姓名
 string getNameXLSX(OpenXLSX::XLWorksheet workSheet, const int&);
 // 读取xlsx文件，返回性别

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <stdexcept>
-#include "input.h"
+#include "fileInput.h"
 
 using std::getline;
 using std::streampos;
@@ -483,6 +483,12 @@ void validateCellAddress(const string &rawAddress)
     }
 }
 
+void verifyFormulaCell(const string &name) {
+    if (name.at(0) == '=') {
+        throw formulaCellTooComplex("该单元格包含公式！");
+    }
+}
+
 /**
  * @brief 将单元格地址字符串转换为行列索引
  *
@@ -572,6 +578,7 @@ std::tuple<OpenXLSX::XLCellValue, int> determineCellType(
             if (cellValue.get<std::string>().empty()) {
                 return std::make_tuple(cellValue, 0);
             }
+            verifyFormulaCell(cellValue);
             return std::make_tuple(cellValue, 5);
         } else {
             // 如果遇到未知类型，返回一个默认的 XLCellValue 和类型码 -1
@@ -615,6 +622,7 @@ std::tuple<OpenXLSX::XLCellValue, int> determineCellType(
             if (cellValue.get<std::string>().empty()) {
                 return std::make_tuple(cellValue, 0);
             }
+            verifyFormulaCell(cellValue);
             return std::make_tuple(cellValue, 5);
         } else {
             // 如果遇到未知类型，返回一个默认的 XLCellValue 和类型码 -1
@@ -632,6 +640,12 @@ string getNameXLSX(OpenXLSX::XLWorksheet workSheet, const int &whileNumber = 1) 
     // 从A2(2,1)开始读取姓名
     string cellPosition = "A" + std::to_string(whileNumber + 1);
     auto [cellValue, typeCode] = determineCellType(workSheet, cellPosition);
+    if (typeCode == 0) {
+        throw expectationCellEmpty("期望单元格为空！");
+    }
+    if (typeCode != 5) {
+        throw expectationCellTypeError("期望单元格类型不对！");
+    }
     return cellValue.get<std::string>();
 }
 
@@ -646,6 +660,14 @@ string getSexXLSX(OpenXLSX::XLWorksheet workSheet, const int &whileNumber = 1) {
     // 从B2(2,2)开始读取性别
     string cellPosition = "B" + std::to_string(whileNumber + 1);
     auto [cellValue, typeCode] = determineCellType(workSheet, cellPosition);
+    if (typeCode == 0)
+    {
+        throw expectationCellEmpty("期望单元格为空！");
+    }
+    if (typeCode != 5)
+    {
+        throw expectationCellTypeError("期望单元格类型不对！");
+    }
     return cellValue.get<std::string>();
 }
 
@@ -661,6 +683,14 @@ string getTitleXLSX(OpenXLSX::XLWorksheet workSheet, const int &whileNumber = 1)
     cellIndex titleCell{whileNumber + 2, 1}; // 行号为 whileNumber + 2，列号为 1（即A列）
     string cellPosition = cellAddress(titleCell);
     auto [cellValue, typeCode] = determineCellType(workSheet, cellPosition);
+    if (typeCode == 0)
+    {
+        throw expectationCellEmpty("期望单元格为空！");
+    }
+    if (typeCode != 5)
+    {
+        throw expectationCellTypeError("期望单元格类型不对！");
+    }
     return cellValue.get<std::string>();
 }
 
@@ -712,4 +742,19 @@ int getTitleColumnXLSX(OpenXLSX::XLWorksheet workSheet, const string &title) {
         ++column;
     }
     return -1; // 未找到标题
+}
+
+/**
+ * @brief 查找指定标题列与姓名行的单元格索引
+ *
+ * @param workSheet 工作表
+ * @param title 标题
+ * @param name 姓名
+ * @return cellIndex 返回行列索引结构体
+ */
+cellIndex getTitleRowXLSX(OpenXLSX::XLWorksheet workSheet, const string &title, const string &name) {
+    int row = getNameRowXLSX(workSheet, name);
+    int column = getTitleColumnXLSX(workSheet, title);
+    cellIndex cell{row, column};
+    return cell;
 }

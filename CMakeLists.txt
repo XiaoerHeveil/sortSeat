@@ -1,7 +1,7 @@
 set(CMAKE_TOOLCHAIN_FILE "D:/Code/Cpp/project/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
 
 cmake_minimum_required(VERSION 3.15)
-project(MyMiniGame)
+project(sortSeat)
 
 # 1. 设置VCPKG_TARGET_TRIPLET，指定MinGW目标三元组
 set(VCPKG_TARGET_TRIPLET "x64-mingw-dynamic" CACHE STRING "Vcpkg triplet")
@@ -22,7 +22,7 @@ if(inc_dirs MATCHES "/include/OpenXLSX$")
 endif()
 
 # 4. 搜集源文件
-add_executable(MyMiniGame "test/test1.cpp")
+add_executable(sortSeat "src/sortSeat.cpp", "src/fileInput.cpp", "src/sorting.cpp", "src/student.cpp")
 
 # 5. 链接库
-target_link_libraries(MyMiniGame PRIVATE OpenXLSX::OpenXLSX)
+target_link_libraries(sortSeat PRIVATE OpenXLSX::OpenXLSX)
