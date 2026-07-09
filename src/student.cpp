@@ -8,11 +8,11 @@ Student::Student() {
 	seatNumber = 1;
 }
 
-Student::Student(std::string name, std::string sex, int seatNumber = 1)
+Student::Student(std::string name, std::string sex, int seatNumber)
 {
-	name = this->name;
-	sex = this->sex;
-	seatNumber = this->seatNumber;
+	this->name = name;
+	this->sex = sex;
+	this->seatNumber = seatNumber;
 }
 
 std::string Student::getName() const {
@@ -37,7 +37,7 @@ void Student::setSeatNumber(int a) {
 	}
 }
 
-// 打印Student类的成员信息
+Student::~Student() {}
 void printInformation(const Student &s) {
 	std::cout << "你的信息如下：\n"
 		 << "姓名：" << s.getName() << '\n'

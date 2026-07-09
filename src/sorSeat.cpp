@@ -14,6 +14,8 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <filesystem>
+#include <fstream>
 #include "student.h"
 #include "fileInput.h"
 #include "sorting.h"
@@ -32,6 +34,7 @@ int main(void) {
 		cout << "请输入你要读取文件的路径：\n";
 		std::string path;
 		cin >> path;
+		int fileType = -1; // 文件类型，用于后续condition/groupCondition判断
 
 		// 判断文件类型
 		try {
@@ -43,7 +46,8 @@ int main(void) {
 		}
 
 		try {
-			switch (fileExtension(path)) {
+			fileType = fileExtension(path);
+			switch (fileType) {
 				case 0: {
 					// 顺着路径打开文件
 					ifstream inFile;
@@ -156,6 +160,59 @@ int main(void) {
 		// 编号会被保存在这个数组中，所有排序都是基于编号进行映射（动号不动人）
 		// 因为需要修改顺序，因此拷贝内置整形比拷贝整个对象的开销要小很多
 		// 保留数字：0->空座位（或者这里还没有排座）；255->无法分配；254,253,252,251,250->条件排序（目前最多5个条件，后续增添）
+
+		// 读取DSL规则文件并排序
+		std::string dslPath = "test/ABCD.txt";
+		std::ifstream dslFile(dslPath);
+		std::vector<std::string> ruleLines;
+		if (dslFile.is_open()) {
+			std::string ruleLine;
+			while (std::getline(dslFile, ruleLine)) {
+				auto first = std::find_if(ruleLine.begin(), ruleLine.end(),
+				    [](unsigned char ch) { return !std::isspace(ch); });
+				if (first != ruleLine.end())
+					ruleLines.push_back(ruleLine);
+			}
+			dslFile.close();
+
+			sortFunctionsByPriority(ruleLines);
+
+			// 写入临时文件
+			std::filesystem::path tempDir =
+			    std::filesystem::temp_directory_path();
+			std::filesystem::path tempFile =
+			    tempDir / "seat_rules_sorted.txt";
+			std::ofstream outFile(tempFile);
+			if (outFile.is_open()) {
+				for (const auto &r : ruleLines)
+					outFile << r << '\n';
+				outFile.close();
+				cout << "已排序的规则已写入: " << tempFile.string()
+				     << endl;
+			}
+		} else {
+			cout << "未找到DSL规则文件: " << dslPath
+			     << "，使用真随机模式" << endl;
+		}
+
+		// 解析并执行规则
+		if (!ruleLines.empty()) {
+			auto rules = parseRuleLines(ruleLines);
+			executeRules(rules, &seatNumber[0][0], x_row, y_column,
+			             groupRow, studentGroup, path, fileType);
+			cout << "已执行 " << rules.size() << " 条规则" << endl;
+			constrainedFill(&seatNumber[0][0], x_row, y_column,
+			                groupRow, studentGroup);
+		} else {
+			randomFill(&seatNumber[0][0], x_row, y_column,
+			           studentGroup);
+		}
+
+		// 打印座位布局
+		printSeatLayout(&seatNumber[0][0], x_row, y_column,
+		                studentGroup);
+
+		break;
 	}
 	
 	return 0;

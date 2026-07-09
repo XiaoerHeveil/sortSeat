@@ -483,9 +483,12 @@ void validateCellAddress(const string &rawAddress)
     }
 }
 
-void verifyFormulaCell(const string &name) {
-    if (name.at(0) == '=') {
-        throw formulaCellTooComplex("该单元格包含公式！");
+void verifyFormulaCell(const OpenXLSX::XLCellValue &cellValue) {
+    if (cellValue.type() == OpenXLSX::XLValueType::String) {
+        std::string str = cellValue.get<std::string>();
+        if (!str.empty() && str.at(0) == '=') {
+            throw formulaCellTooComplex("该单元格包含公式！");
+        }
     }
 }
 

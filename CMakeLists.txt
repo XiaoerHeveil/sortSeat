@@ -22,7 +22,12 @@ if(inc_dirs MATCHES "/include/OpenXLSX$")
 endif()
 
 # 4. 搜集源文件
-add_executable(sortSeat "src/sortSeat.cpp", "src/fileInput.cpp", "src/sorting.cpp", "src/student.cpp")
+add_executable(sortSeat
+    src/sorSeat.cpp
+    src/fileInput.cpp
+    src/sorting.cpp
+    src/student.cpp
+)
 
 # 5. 链接库
 target_link_libraries(sortSeat PRIVATE OpenXLSX::OpenXLSX)
