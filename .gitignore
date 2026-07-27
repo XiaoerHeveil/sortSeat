@@ -4,3 +4,4 @@ bin/
 test/
 docs/
 log/
+vcpkg_installed/
