@@ -1,4 +1,4 @@
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#pragma MSVC diagnostic ignored "-Wdeprecated-declarations"
 #define PLATFORM_WINDOWS 1
 #define PLATFORM_OTHER 0
 
@@ -156,7 +156,9 @@ int main(void) {
 		cin >> groupRow;
 
 		int y_column = peopleNumber / x_row + 1;
-		unsigned int seatNumber[x_row][y_column] = {0};
+		// 使用 vector 动态创建二维数组，所有元素初始化为 0
+		std::vector<std::vector<unsigned int>> seatNumber(x_row, std::vector<unsigned int>(y_column, 0));
+
 		// 编号会被保存在这个数组中，所有排序都是基于编号进行映射（动号不动人）
 		// 因为需要修改顺序，因此拷贝内置整形比拷贝整个对象的开销要小很多
 		// 保留数字：0->空座位（或者这里还没有排座）；255->无法分配；254,253,252,251,250->条件排序（目前最多5个条件，后续增添）
