@@ -4,7 +4,12 @@ cmake_minimum_required(VERSION 3.15)
 project(sortSeat)
 
 # 1. 设置VCPKG_TARGET_TRIPLET，指定MinGW目标三元组
-set(VCPKG_TARGET_TRIPLET "x64-mingw-dynamic" CACHE STRING "Vcpkg triplet")
+# set(VCPKG_TARGET_TRIPLET "x64-windows-dynamic" CACHE STRING "Vcpkg triplet")
+
+# 指定UTF-8编码
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
 
 # 2. 设置C++标准
 set(CMAKE_CXX_STANDARD 20)

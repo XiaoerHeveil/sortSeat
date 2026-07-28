@@ -1,14 +1,50 @@
 #pragma once
 #include <tuple>
 #include <fstream>
+#include <stdexcept>
 #include <OpenXLSX/OpenXLSX.hpp>
 
-using NullPathException = std::runtime_error;
-using PathIllegalException = std::runtime_error;
-using NullFile = std::runtime_error;
-using expectationCellEmpty = std::runtime_error;
-using expectationCellTypeError = std::runtime_error;
-using formulaCellTooComplex = std::runtime_error;
+class NullPathException : public std::runtime_error
+{
+public:
+    explicit NullPathException(const std::string &msg)
+        : std::runtime_error(msg) {}
+};
+
+class PathIllegalException : public std::runtime_error
+{
+public:
+    explicit PathIllegalException(const std::string &msg)
+        : std::runtime_error(msg) {}
+};
+
+class NullFile : public std::runtime_error
+{
+public:
+    explicit NullFile(const std::string &msg)
+        : std::runtime_error(msg) {}
+};
+
+class expectationCellEmpty : public std::runtime_error
+{
+public:
+    explicit expectationCellEmpty(const std::string &msg)
+        : std::runtime_error(msg) {}
+};
+
+class expectationCellTypeError : public std::runtime_error
+{
+public:
+    explicit expectationCellTypeError(const std::string &msg)
+        : std::runtime_error(msg) {}
+};
+
+class formulaCellTooComplex : public std::runtime_error
+{
+public:
+    explicit formulaCellTooComplex(const std::string &msg)
+        : std::runtime_error(msg) {}
+};
 
 using std::ifstream;
 using std::string;
@@ -21,15 +57,17 @@ struct cellIndex
 };
 
 // 定义非法单元格地址异常
-class InvalidCellAddressException : public std::exception {
-        string msg;
-        int number;
-    public :
-        InvalidCellAddressException(const string &addr, const string &reason)
-            : msg("Invalid cell address '" + addr + "': " + reason) {}
-        InvalidCellAddressException(int number, const string &reason)
-            : msg("Invalid cell address at row or column " + std::to_string(number) + ": " + reason), number(number) {}
-        const char *what() const noexcept override { return msg.c_str(); }
+class InvalidCellAddressException : public std::exception
+{
+    string msg;
+    int number;
+
+public:
+    InvalidCellAddressException(const string &addr, const string &reason)
+        : msg("Invalid cell address '" + addr + "': " + reason) {}
+    InvalidCellAddressException(int number, const string &reason)
+        : msg("Invalid cell address at row or column " + std::to_string(number) + ": " + reason), number(number) {}
+    const char *what() const noexcept override { return msg.c_str(); }
 };
 
 // 实际上这里可以用类进行定义与继承，但我没有弄明白这三个之间的继承关系
@@ -77,14 +115,14 @@ cellIndex cellAddress(const string &);
 // 处理单元格地址，索引转字符
 string cellAddress(const cellIndex &);
 // 读取xlsx文件，返回指定单元格内容
-std::tuple<OpenXLSX::XLCellValue, int> determineCellType(OpenXLSX::XLWorksheet, const string&);
+std::tuple<OpenXLSX::XLCellValue, int> determineCellType(OpenXLSX::XLWorksheet, const string &);
 std::tuple<OpenXLSX::XLCellValue, int> determineCellType(OpenXLSX::XLWorksheet, const int &, const int &);
 // 读取xlsx文件，返回姓名
-string getNameXLSX(OpenXLSX::XLWorksheet workSheet, const int&);
+string getNameXLSX(OpenXLSX::XLWorksheet workSheet, const int &);
 // 读取xlsx文件，返回性别
-string getSexXLSX(OpenXLSX::XLWorksheet workSheet, const int&);
+string getSexXLSX(OpenXLSX::XLWorksheet workSheet, const int &);
 // 读取xlsx文件，返回标题
-string getTitleXLSX(OpenXLSX::XLWorksheet workSheet, const int&);
+string getTitleXLSX(OpenXLSX::XLWorksheet workSheet, const int &);
 // 读取xlsx文件，返回名称所在行
 int getNameRowXLSX(OpenXLSX::XLWorksheet workSheet, const string &);
 // 读取xlsx文件，查找标题列所在列
