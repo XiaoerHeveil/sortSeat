@@ -26,11 +26,15 @@ endif()
 # wxWidgets（GUI 进程使用）
 find_package(wxWidgets REQUIRED COMPONENTS core base)
 
+# spdlog（异步日志）
+find_package(spdlog CONFIG REQUIRED)
+
 # 4. 业务与 GUI 共用的核心代码库
 add_library(sorSeatCore STATIC
     src/fileInput.cpp
     src/sorting.cpp
     src/student.cpp
+    src/Log.cpp
     sorSeatUI/MainFrame.cpp
     sorSeatUI/SeatPanel.cpp
     sorSeatUI/SequenceButton.cpp
@@ -42,7 +46,7 @@ target_include_directories(sorSeatCore PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/sorSeatUI
 )
 
-target_link_libraries(sorSeatCore PUBLIC OpenXLSX::OpenXLSX ${wxWidgets_LIBRARIES})
+target_link_libraries(sorSeatCore PUBLIC OpenXLSX::OpenXLSX ${wxWidgets_LIBRARIES} spdlog::spdlog)
 target_compile_definitions(sorSeatCore PRIVATE ${wxWidgets_DEFINITIONS})
 
 # 5. 业务进程（控制台程序，后续用于 IPC 双向存活检测）

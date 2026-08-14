@@ -25,9 +25,12 @@
 #include "student.h"
 #include "fileInput.h"
 #include "sorting.h"
+#include "Log.h"
 
 int main(void)
 {
+	Log::init("sortSeat");
+
 	using std::cerr;
 	using std::cin;
 	using std::cout;
@@ -267,5 +270,6 @@ int main(void)
 		break;
 	}
 
+	Log::shutdown();
 	return 0;
 }

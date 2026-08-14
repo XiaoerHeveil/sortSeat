@@ -5,4 +5,5 @@ class sorSeatApp : public wxApp
 {
 public:
 	bool OnInit();
+	int OnExit();
 };

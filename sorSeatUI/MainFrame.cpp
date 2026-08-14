@@ -4,6 +4,7 @@
 #include <wx/dcmemory.h>
 #include <wx/spinctrl.h>
 #include <wx/filename.h>
+#include <wx/stdpaths.h>
 #include <wx/tokenzr.h>
 #include <wx/choice.h>
 #include <wx/hyperlink.h>
@@ -14,6 +15,8 @@ MainFrame::MainFrame(const wxString &title)
 {
 	// 初始化图片加载器
 	wxInitAllImageHandlers();
+	wxString resourceBase =
+		wxFileName(wxStandardPaths::Get().GetExecutablePath()).GetPath() + wxFileName::GetPathSeparator() + "resource" + wxFileName::GetPathSeparator();
 	// 未来计划：设计可以从配置文件里读取
 	titleColour = wxColour(30, 145, 255);
 	themeColour = wxColour(90, 90, 90);
@@ -32,10 +35,10 @@ MainFrame::MainFrame(const wxString &title)
 	wxBoxSizer *topSizer = new wxBoxSizer(wxHORIZONTAL);
 
 	// 加载图片显示
-	std::string imageName[3] = {"排座位logo.png", "最小化.png", "关闭.png"};
+	const wxString imageName[3] = {L"排座位logo.png", L"最小化.png", L"关闭.png"};
 	for (int i = 0; i < 3; ++i)
 	{
-		std::string tempStr = "./resource/" + imageName[i];
+		wxString tempStr = resourceBase + imageName[i];
 		switch (i)
 		{
 		case 0:
@@ -51,7 +54,7 @@ MainFrame::MainFrame(const wxString &title)
 			}
 			else
 			{
-				wxLogMessage("未找到该图片");
+				wxLogMessage(L"未找到该图片");
 			}
 			break;
 		}
@@ -65,7 +68,7 @@ MainFrame::MainFrame(const wxString &title)
 			}
 			else
 			{
-				wxLogMessage("未找到该图片");
+				wxLogMessage(L"未找到该图片");
 			}
 			break;
 		}
@@ -78,7 +81,7 @@ MainFrame::MainFrame(const wxString &title)
 			}
 			else
 			{
-				wxLogMessage("未找到该图片");
+				wxLogMessage(L"未找到该图片");
 			}
 			break;
 		}
@@ -89,13 +92,13 @@ MainFrame::MainFrame(const wxString &title)
 	// 创建按钮组
 
 	HomeButton = new sorButton(ButtonPanel, wxID_ANY,
-							   wxBitmap("./resource/首页.png", wxBITMAP_TYPE_PNG), "首页", buttonGroup);
+							   wxBitmap(resourceBase + L"首页.png", wxBITMAP_TYPE_PNG), L"首页", buttonGroup);
 	ResultButton = new sorButton(ButtonPanel, wxID_ANY,
-								 wxBitmap("./resource/结果.png", wxBITMAP_TYPE_PNG), "结果", buttonGroup);
+								 wxBitmap(resourceBase + L"结果.png", wxBITMAP_TYPE_PNG), L"结果", buttonGroup);
 	SetUpButton = new sorButton(ButtonPanel, wxID_ANY,
-								wxBitmap("./resource/设置.png", wxBITMAP_TYPE_PNG), "设置", buttonGroup);
+								wxBitmap(resourceBase + L"设置.png", wxBITMAP_TYPE_PNG), L"设置", buttonGroup);
 	InformationButton = new sorButton(ButtonPanel, wxID_ANY,
-									  wxBitmap("./resource/信息.png", wxBITMAP_TYPE_PNG), "信息", buttonGroup);
+									  wxBitmap(resourceBase + L"信息.png", wxBITMAP_TYPE_PNG), L"信息", buttonGroup);
 
 	buttonGroup.push_back(HomeButton);
 	buttonGroup.push_back(ResultButton);
@@ -201,7 +204,7 @@ MainFrame::MainFrame(const wxString &title)
 	// 创建Home界面布局
 	wxBoxSizer *HomeSizer = new wxBoxSizer(wxVERTICAL);
 	// 建设Home界面
-	wxStaticText *titleText = new wxStaticText(HomePanel, wxID_ANY, "排座位",
+	wxStaticText *titleText = new wxStaticText(HomePanel, wxID_ANY, L"排座位",
 											   wxPoint(-1, 10), wxDefaultSize, wxALIGN_CENTRE_HORIZONTAL);
 	// 设置标题字体大小
 	wxFont titleFont = titleText->GetFont();
@@ -247,15 +250,15 @@ MainFrame::MainFrame(const wxString &title)
 	wxBoxSizer *Student_NumberInputSizer = new wxBoxSizer(wxHORIZONTAL);
 
 	// 文本
-	wxStaticText *columnsText = new wxStaticText(Student_NumberInputPanel, wxID_ANY, "列数：");
+	wxStaticText *columnsText = new wxStaticText(Student_NumberInputPanel, wxID_ANY, L"列数：");
 	wxFont columnsFont = columnsText->GetFont();
 	columnsFont.SetPointSize(21);
 	columnsText->SetFont(columnsFont);
-	wxStaticText *groupText = new wxStaticText(Student_NumberInputPanel, wxID_ANY, "小组组数：");
+	wxStaticText *groupText = new wxStaticText(Student_NumberInputPanel, wxID_ANY, L"小组组数：");
 	wxFont groupFont = groupText->GetFont();
 	groupFont.SetPointSize(21);
 	groupText->SetFont(groupFont);
-	wxStaticText *fileName = new wxStaticText(Student_NumberInputPanel, wxID_ANY, "学生名单：");
+	wxStaticText *fileName = new wxStaticText(Student_NumberInputPanel, wxID_ANY, L"学生名单：");
 	wxFont fileFont = fileName->GetFont();
 	fileFont.SetPointSize(21);
 	fileName->SetFont(fileFont);
@@ -285,13 +288,13 @@ MainFrame::MainFrame(const wxString &title)
 	// 创建布局
 	wxBoxSizer *StuName_TextInputSizer = new wxBoxSizer(wxVERTICAL);
 	// 文本
-	wxStaticText *StudentNameInputText = new wxStaticText(StuName_TextInputPanel, wxID_ANY, "手动输入人员名：");
+	wxStaticText *StudentNameInputText = new wxStaticText(StuName_TextInputPanel, wxID_ANY, L"手动输入人员名：");
 	wxFont StudentNameInputFont = StudentNameInputText->GetFont();
 	StudentNameInputFont.SetPointSize(18);
 	StudentNameInputText->SetFont(StudentNameInputFont);
 	// 人员输入框
 	wxTextCtrl *StudentNameInput = new wxTextCtrl(StuName_TextInputPanel, wxID_ANY,
-												  "请使用，；[空格]进行区分人员组，使用：用于在人员后跟性别", wxDefaultPosition, wxSize(-1, 400), wxTE_MULTILINE);
+												  L"请使用，；[空格]进行区分人员组，使用：用于在人员后跟性别", wxDefaultPosition, wxSize(-1, 400), wxTE_MULTILINE);
 	// 添加至布局
 	StuName_TextInputSizer->Add(StudentNameInputText, 0, wxEXPAND | wxRIGHT, 10);
 	StuName_TextInputSizer->Add(StudentNameInput, 0, wxEXPAND);
@@ -303,15 +306,15 @@ MainFrame::MainFrame(const wxString &title)
 	wxBoxSizer *StuFile_InputSizer = new wxBoxSizer(wxVERTICAL);
 
 	// 创建选择规则
-	wxString wildcard = "文本文件 (*.txt)|*.txt|CSV文件 (*.csv)|*.csv|Excel文件 (*.xlsx)|*.xlsx";
+	wxString wildcard = L"文本文件 (*.txt)|*.txt|CSV文件 (*.csv)|*.csv|Excel文件 (*.xlsx)|*.xlsx";
 	// 用于显示文件路径的静态文本
-	wxStaticText *FileText = new wxStaticText(StuFile_InputPanel, wxID_ANY, "未选择文件");
+	wxStaticText *FileText = new wxStaticText(StuFile_InputPanel, wxID_ANY, L"未选择文件");
 	wxFont FileFont = FileText->GetFont();
 	FileFont.SetPointSize(18);
 	FileText->SetFont(FileFont);
 	// 创建文件选取控件
 	// 创建“选择文件”按钮
-	wxButton *chooseFileBtn = new wxButton(StuFile_InputPanel, wxID_ANY, "选择文件",
+	wxButton *chooseFileBtn = new wxButton(StuFile_InputPanel, wxID_ANY, L"选择文件",
 										   wxDefaultPosition, wxSize(120, 40));
 	// 设置按钮样式（可选）
 	chooseFileBtn->SetBackgroundColour(wxColour(50, 150, 255));
@@ -323,10 +326,10 @@ MainFrame::MainFrame(const wxString &title)
     // 创建文件对话框
     wxFileDialog fileDialog(
         StuFile_InputPanel,                 // 父窗口
-        "选择学生名单文件",                   // 标题
+        L"选择学生名单文件",                   // 标题
         wxEmptyString,                      // 默认目录
         wxEmptyString,                      // 默认文件名
-        "文本文件 (*.txt)|*.txt|CSV文件 (*.csv)|*.csv|Excel文件 (*.xlsx)|*.xlsx",
+        L"文本文件 (*.txt)|*.txt|CSV文件 (*.csv)|*.csv|Excel文件 (*.xlsx)|*.xlsx",
         wxFD_OPEN | wxFD_FILE_MUST_EXIST
     );
 
@@ -334,7 +337,7 @@ MainFrame::MainFrame(const wxString &title)
 		m_filePath = fileDialog.GetPath();
 		// 更新静态文本显示文件路径（可只显示文件名）
 		wxFileName fn(m_filePath);
-		FileText->SetLabel("已选择文件: " + fn.GetFullName());
+		FileText->SetLabel(L"已选择文件: " + fn.GetFullName());
         // 如果需要，还可以将路径保存到成员变量中供后续使用
     } else {
         // 用户取消，可做相应处理
@@ -365,13 +368,13 @@ MainFrame::MainFrame(const wxString &title)
 	// 创建标题栏布局
 	wxBoxSizer *Rules_TextSizer = new wxBoxSizer(wxHORIZONTAL);
 	// 文本-按钮-按钮
-	wxButton *ClearData = new wxButton(Rules_TextPanel, wxID_ANY, "清除",
+	wxButton *ClearData = new wxButton(Rules_TextPanel, wxID_ANY, L"清除",
 									   wxDefaultPosition, wxSize(100, 60));
-	wxStaticText *RulesFileText = new wxStaticText(Rules_TextPanel, wxID_ANY, "未选择文件");
+	wxStaticText *RulesFileText = new wxStaticText(Rules_TextPanel, wxID_ANY, L"未选择文件");
 	wxFont RluseFileFont = RulesFileText->GetFont();
 	RluseFileFont.SetPointSize(18);
 	RulesFileText->SetFont(RluseFileFont);
-	wxButton *FileImportBtn = new wxButton(Rules_TextPanel, wxID_ANY, "导入规则文件",
+	wxButton *FileImportBtn = new wxButton(Rules_TextPanel, wxID_ANY, L"导入规则文件",
 										   wxDefaultPosition, wxSize(100, 60));
 	FileImportBtn->SetBackgroundColour(wxColour(50, 150, 255));
 	FileImportBtn->SetForegroundColour(*wxWHITE);
@@ -380,19 +383,19 @@ MainFrame::MainFrame(const wxString &title)
 						{
 		wxFileDialog fileDialog(
 			Rules_TextPanel,
-			"选择规则文件",
+			L"选择规则文件",
 			wxEmptyString,
 			wxEmptyString,
-			"文本文件 (*.txt)|*.txt",
+			L"文本文件 (*.txt)|*.txt",
 			wxFD_OPEN | wxFD_FILE_MUST_EXIST
 		);
 
 		if (fileDialog.ShowModal() == wxID_OK) {
 			m_rulesFilePath = fileDialog.GetPath();
 			wxFileName fn(m_rulesFilePath);
-			RulesFileText->SetLabel("已选择文件: " + fn.GetFullName());
+			RulesFileText->SetLabel(L"已选择文件: " + fn.GetFullName());
 		} });
-	wxStaticText *RulesText = new wxStaticText(Rules_TextPanel, wxID_ANY, "输入排座规则（留空随机排序）：");
+	wxStaticText *RulesText = new wxStaticText(Rules_TextPanel, wxID_ANY, L"输入排座规则（留空随机排序）：");
 	wxFont RulesFont = RulesText->GetFont();
 	RulesFont.SetPointSize(18);
 	RulesText->SetFont(RulesFont);
@@ -433,14 +436,14 @@ MainFrame::MainFrame(const wxString &title)
 	// 创建标题
 	wxPanel *ResDis_TextPanel = new wxPanel(Home_ResultDisplay, wxID_ANY);
 	wxBoxSizer *ResDis_TextSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxStaticText *ResultDisplayText = new wxStaticText(ResDis_TextPanel, wxID_ANY, "排序结果");
+	wxStaticText *ResultDisplayText = new wxStaticText(ResDis_TextPanel, wxID_ANY, L"排序结果");
 	wxFont ResultDisplayFont = ResultDisplayText->GetFont();
 	ResultDisplayFont.SetPointSize(32);
 	ResultDisplayText->SetFont(ResultDisplayFont);
-	StartButton = new wxButton(ResDis_TextPanel, wxID_ANY, "开始",
+	StartButton = new wxButton(ResDis_TextPanel, wxID_ANY, L"开始",
 							   wxDefaultPosition, wxSize(160, 60));
 	StartButton->SetBackgroundColour(wxColour(204, 51, 255));
-	PositionButton = new wxButton(ResDis_TextPanel, wxID_ANY, "归位",
+	PositionButton = new wxButton(ResDis_TextPanel, wxID_ANY, L"归位",
 								  wxDefaultPosition, wxSize(160, 60));
 	PositionButton->SetBackgroundColour(wxColour(64, 64, 64));
 	StartButton->Bind(wxEVT_BUTTON, &MainFrame::OnStartClicked, this);
@@ -458,11 +461,11 @@ MainFrame::MainFrame(const wxString &title)
 	wxPanel *Result_DispalyPanel = new wxPanel(Home_ResultDisplay, wxID_ANY);
 	wxBoxSizer *Result_DispalySizer = new wxBoxSizer(wxVERTICAL);
 	wxStaticText *Result_DispalyText = new wxStaticText(Result_DispalyPanel, wxID_ANY,
-														"由于框架原因，请点击下面的按钮跳转到单独的界面查看结果");
+														L"由于框架原因，请点击下面的按钮跳转到单独的界面查看结果");
 	wxFont Result_DispalyFont = Result_DispalyText->GetFont();
 	Result_DispalyFont.SetPointSize(21);
 	Result_DispalyText->SetFont(Result_DispalyFont);
-	wxButton *GotuDispalyButton = new wxButton(Result_DispalyPanel, wxID_ANY, "点击跳转",
+	wxButton *GotuDispalyButton = new wxButton(Result_DispalyPanel, wxID_ANY, L"点击跳转",
 											   wxDefaultPosition, wxSize(-1, 80));
 	GotuDispalyButton->SetBackgroundColour(wxColour(235, 235, 0));
 	GotuDispalyButton->Bind(wxEVT_BUTTON, &MainFrame::OnResultClicked, this);
@@ -476,13 +479,13 @@ MainFrame::MainFrame(const wxString &title)
 	// 添加导出按钮面板
 	wxPanel *ResDis_ExportButtonPanel = new wxPanel(Home_ResultDisplay, wxID_ANY);
 	wxBoxSizer *ResDis_ExportButtonSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxButton *ExportTextButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, "导出TXT文件",
+	wxButton *ExportTextButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, L"导出TXT文件",
 											  wxDefaultPosition, wxSize(160, 40));
 	ExportTextButton->SetBackgroundColour(wxColour(0, 120, 255));
-	wxButton *ExportExcelButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, "导出CSV文件",
+	wxButton *ExportExcelButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, L"导出CSV文件",
 											   wxDefaultPosition, wxSize(160, 40));
 	ExportExcelButton->SetBackgroundColour(wxColour(0, 165, 40));
-	wxButton *ExportPNGButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, "导出Excel文件",
+	wxButton *ExportPNGButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, L"导出Excel文件",
 											 wxDefaultPosition, wxSize(160, 40));
 	ExportPNGButton->SetBackgroundColour(wxColour(153, 51, 255));
 	// 添加布局
@@ -513,7 +516,7 @@ MainFrame::MainFrame(const wxString &title)
 
 	// Result界面
 	// 此字符串仅用作测试参考
-	wxString testText = "张1,张2 张3,张4 张5,张6 张7,张8\n李1,李2 李3,李4 李5,李6 李7,李8\n王1,王2 王3,王4 王5,王6 王7,王8";
+	wxString testText = L"张1,张2 张3,张4 张5,张6 张7,张8\n李1,李2 李3,李4 李5,李6 李7,李8\n王1,王2 王3,王4 王5,王6 王7,王8";
 	ParseResultText(testText);
 
 	// SetUp界面
@@ -525,12 +528,12 @@ MainFrame::MainFrame(const wxString &title)
 	ChoiceLangPanel->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, 1.5f));
 	themeColourPanels.push_back({ChoiceLangPanel, 1.5f});
 	wxBoxSizer *ChoiceLangSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxStaticText *ChoiceLangText = new wxStaticText(ChoiceLangPanel, wxID_ANY, "选择语言");
+	wxStaticText *ChoiceLangText = new wxStaticText(ChoiceLangPanel, wxID_ANY, L"选择语言");
 	wxFont ChoiceLangFont = ChoiceLangText->GetFont();
 	ChoiceLangFont.SetPointSize(14);
 	ChoiceLangText->SetFont(ChoiceLangFont);
 	wxArrayString LangString;
-	LangString.Add("简体中文");
+	LangString.Add(L"简体中文");
 	wxChoice *LangChoice = new wxChoice(ChoiceLangPanel, wxID_ANY, wxDefaultPosition, wxSize(120, 64), LangString);
 	LangChoice->SetSelection(0);
 	// 添加至布局
@@ -545,13 +548,13 @@ MainFrame::MainFrame(const wxString &title)
 	SetDarkModePanel->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, 1.5f));
 	themeColourPanels.push_back({SetDarkModePanel, 1.5f});
 	wxBoxSizer *SetDarkModeSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxStaticText *DarkModeText = new wxStaticText(SetDarkModePanel, wxID_ANY, "深色模式",
+	wxStaticText *DarkModeText = new wxStaticText(SetDarkModePanel, wxID_ANY, L"深色模式",
 												  wxDefaultPosition, wxDefaultSize);
 	wxFont DarkModeFont = DarkModeText->GetFont();
 	DarkModeFont.SetPointSize(21);
 	DarkModeText->SetFont(DarkModeFont);
 	// 一个有点复杂的按钮
-	wxString resourceDir = "./resource/AnBtn";
+	wxString resourceDir = resourceBase + L"AnBtn";
 	std::vector<wxBitmap> frames = LoadButtonFrames(resourceDir, 18);
 	// 容错：如果一张图片都没加载出来，默认给个红色的占位图，防止崩溃
 	if (frames.empty())
@@ -577,7 +580,7 @@ MainFrame::MainFrame(const wxString &title)
 	SetTitleColourPanel->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, 1.5f));
 	themeColourPanels.push_back({SetTitleColourPanel, 1.5f});
 	wxBoxSizer *SetTitleColourSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxStaticText *SetTitleColourText = new wxStaticText(SetTitleColourPanel, wxID_ANY, "设置标题栏颜色");
+	wxStaticText *SetTitleColourText = new wxStaticText(SetTitleColourPanel, wxID_ANY, L"设置标题栏颜色");
 	wxFont SetTitleColourFont = SetTitleColourText->GetFont();
 	SetTitleColourFont.SetPointSize(16);
 	SetTitleColourText->SetFont(SetTitleColourFont);
@@ -596,7 +599,7 @@ MainFrame::MainFrame(const wxString &title)
 	SetThemeColourPanel->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, 1.5f));
 	themeColourPanels.push_back({SetThemeColourPanel, 1.5f});
 	wxBoxSizer *SetThemeColourSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxStaticText *SetThemeColourText = new wxStaticText(SetThemeColourPanel, wxID_ANY, "设置主题色");
+	wxStaticText *SetThemeColourText = new wxStaticText(SetThemeColourPanel, wxID_ANY, L"设置主题色");
 	wxFont SetThemeColourFont = SetThemeColourText->GetFont();
 	SetThemeColourFont.SetPointSize(16);
 	SetThemeColourText->SetFont(SetThemeColourFont);
@@ -619,7 +622,7 @@ MainFrame::MainFrame(const wxString &title)
 												   "-----------------------------------------------------------");
 	wxStaticText *dividingLine2 = new wxStaticText(AdvancedSettingPanel, wxID_ANY,
 												   "-----------------------------------------------------------");
-	AdvancedSetting = new wxToggleButton(AdvancedSettingPanel, wxID_ANY, "高级设置");
+	AdvancedSetting = new wxToggleButton(AdvancedSettingPanel, wxID_ANY, L"高级设置");
 	AdvancedSetting->Bind(wxEVT_TOGGLEBUTTON, &MainFrame::OnToggle, this);
 	AdvancedSettingSizer->Add(dividingLine1, 1, wxEXPAND);
 	AdvancedSettingSizer->Add(AdvancedSetting, 0, wxEXPAND, 5);
@@ -631,7 +634,7 @@ MainFrame::MainFrame(const wxString &title)
 	ExportLogPanel->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, 1.5f));
 	themeColourPanels.push_back({ExportLogPanel, 1.5f});
 	wxBoxSizer *ExportLogSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxStaticText *ExportLogText = new wxStaticText(ExportLogPanel, wxID_ANY, "导出日志");
+	wxStaticText *ExportLogText = new wxStaticText(ExportLogPanel, wxID_ANY, L"导出日志");
 	wxFont ExportLogFont = ExportLogText->GetFont();
 	ExportLogFont.SetPointSize(16);
 	ExportLogText->SetFont(ExportLogFont);
@@ -659,7 +662,7 @@ MainFrame::MainFrame(const wxString &title)
 	// 感谢语
 	wxPanel *ThankPanel = new wxPanel(InforPanel, wxID_ANY);
 	wxBoxSizer *ThankSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxStaticText *ThankYourText = new wxStaticText(ThankPanel, wxID_ANY, "感谢您使用本软件");
+	wxStaticText *ThankYourText = new wxStaticText(ThankPanel, wxID_ANY, L"感谢您使用本软件");
 	wxFont ThankYourFont = ThankYourText->GetFont();
 	ThankYourFont.SetPointSize(64);
 	ThankYourText->SetFont(ThankYourFont);
@@ -672,11 +675,11 @@ MainFrame::MainFrame(const wxString &title)
 	// 声明版本号和开源协议
 	wxPanel *VersionOrAgreementPanel = new wxPanel(InforPanel, wxID_ANY);
 	wxBoxSizer *VersionOrAgreementSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxStaticText *VersionNumber = new wxStaticText(VersionOrAgreementPanel, wxID_ANY, "早期开发版: Alpha 0.1.5");
+	wxStaticText *VersionNumber = new wxStaticText(VersionOrAgreementPanel, wxID_ANY, L"早期开发版: Alpha 0.1.5");
 	wxFont VersionFont = VersionNumber->GetFont();
 	VersionFont.SetPointSize(12);
 	VersionNumber->SetFont(VersionFont);
-	wxStaticText *OpenSourceLicense = new wxStaticText(VersionOrAgreementPanel, wxID_ANY, "本软件使用LGPT开源协议");
+	wxStaticText *OpenSourceLicense = new wxStaticText(VersionOrAgreementPanel, wxID_ANY, L"本软件使用LGPT开源协议");
 	wxFont LicenseFont = OpenSourceLicense->GetFont();
 	LicenseFont.SetPointSize(42);
 	OpenSourceLicense->SetFont(LicenseFont);
@@ -692,7 +695,7 @@ MainFrame::MainFrame(const wxString &title)
 	projectAddressPanel->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, 1.6f));
 	themeColourPanels.push_back({projectAddressPanel, 1.6f});
 	wxBoxSizer *projectAddressSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxStaticText *githubRepositoryText = new wxStaticText(projectAddressPanel, wxID_ANY, "项目地址: ");
+	wxStaticText *githubRepositoryText = new wxStaticText(projectAddressPanel, wxID_ANY, L"项目地址: ");
 	wxFont githubRepositoryFont = githubRepositoryText->GetFont();
 	githubRepositoryFont.SetPointSize(16);
 	githubRepositoryText->SetFont(githubRepositoryFont);
@@ -708,7 +711,7 @@ MainFrame::MainFrame(const wxString &title)
 	authorPanel->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, 1.6f));
 	themeColourPanels.push_back({authorPanel, 1.6f});
 	wxBoxSizer *authorSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxStaticText *authorText = new wxStaticText(authorPanel, wxID_ANY, "作者: ");
+	wxStaticText *authorText = new wxStaticText(authorPanel, wxID_ANY, L"作者: ");
 	wxFont authorFont = authorText->GetFont();
 	authorFont.SetPointSize(16);
 	authorText->SetFont(authorFont);
@@ -799,11 +802,11 @@ void MainFrame::OnToggle(wxCommandEvent &evt)
 	AdvancedSettingStatus = AdvancedSetting->GetValue();
 	if (AdvancedSettingStatus)
 	{
-		AdvancedSetting->SetLabel("高级设置 ▼");
+		AdvancedSetting->SetLabel(L"高级设置 ▼");
 	}
 	else
 	{
-		AdvancedSetting->SetLabel("高级设置 ▲");
+		AdvancedSetting->SetLabel(L"高级设置 ▲");
 	}
 	if (ExportLogPanel)
 		ExportLogPanel->Show(AdvancedSettingStatus);
@@ -848,7 +851,7 @@ void MainFrame::UpdataResultPanel()
 	{
 		// 显示提示文本
 		wxStaticText *hint = new wxStaticText(resultPanel, wxID_ANY,
-											  "你还没有开始排序",
+											  L"你还没有开始排序",
 											  wxDefaultPosition, wxDefaultSize, wxALIGN_CENTRE);
 		wxFont font = hint->GetFont();
 		font.SetPointSize(24);
