@@ -1,7 +1,7 @@
 set(CMAKE_TOOLCHAIN_FILE "D:/Code/Cpp/project/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
 
 cmake_minimum_required(VERSION 3.15)
-project(sortSeat)
+project(sortSeat LANGUAGES CXX)
 
 # 1. 设置VCPKG_TARGET_TRIPLET，指定MinGW目标三元组
 # set(VCPKG_TARGET_TRIPLET "x64-windows-dynamic" CACHE STRING "Vcpkg triplet")
@@ -26,13 +26,48 @@ if(inc_dirs MATCHES "/include/OpenXLSX$")
     message(STATUS "Corrected INTERFACE_INCLUDE_DIRECTORIES = ${corrected_inc}")
 endif()
 
-# 4. 搜集源文件
-add_executable(sortSeat
-    src/sorSeat.cpp
+# wxWidgets（GUI 进程使用）
+find_package(wxWidgets REQUIRED COMPONENTS core base)
+
+# 4. 业务与 GUI 共用的核心代码库
+add_library(sorSeatCore STATIC
     src/fileInput.cpp
     src/sorting.cpp
     src/student.cpp
+    sorSeatUI/MainFrame.cpp
+    sorSeatUI/SeatPanel.cpp
+    sorSeatUI/SequenceButton.cpp
+    sorSeatUI/sorButton.cpp
 )
 
-# 5. 链接库
-target_link_libraries(sortSeat PRIVATE OpenXLSX::OpenXLSX)
+target_include_directories(sorSeatCore PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/sorSeatUI
+)
+
+target_link_libraries(sorSeatCore PUBLIC OpenXLSX::OpenXLSX ${wxWidgets_LIBRARIES})
+target_compile_definitions(sorSeatCore PRIVATE ${wxWidgets_DEFINITIONS})
+
+# 5. 业务进程（控制台程序，后续用于 IPC 双向存活检测）
+add_executable(sortSeat src/sorSeat.cpp)
+target_link_libraries(sortSeat PRIVATE sorSeatCore)
+
+# 6. GUI 进程（wxWidgets 窗口程序）
+add_executable(sorSeatUI WIN32
+    sorSeatUI/sorSeatApp.cpp
+    sorSeatUI/sorSeatApp.h
+)
+target_link_libraries(sorSeatUI PRIVATE sorSeatCore)
+target_compile_definitions(sorSeatUI PRIVATE ${wxWidgets_DEFINITIONS})
+
+# 将 UI 资源复制到可执行文件旁边，保证 ./resource 相对路径可用
+function(sorSeat_copy_resources target)
+    add_custom_command(TARGET ${target} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/sorSeatUI/resource
+        $<TARGET_FILE_DIR:${target}>/resource
+    )
+endfunction()
+
+sorSeat_copy_resources(sortSeat)
+sorSeat_copy_resources(sorSeatUI)
