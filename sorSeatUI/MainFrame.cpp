@@ -324,7 +324,8 @@ MainFrame::MainFrame(const wxString &title)
 	StudentNameInputText->SetFont(StudentNameInputFont);
 	// 人员输入框
 	StudentNameInput = new wxTextCtrl(StuName_TextInputPanel, wxID_ANY,
-									  L"请使用，；[空格]进行区分人员组，使用：用于在人员后跟性别", wxDefaultPosition, wxSize(-1, 400), wxTE_MULTILINE);
+									  wxEmptyString, wxDefaultPosition, wxSize(-1, 400), wxTE_MULTILINE);
+	StudentNameInput->SetHint(L"请使用，；[空格]进行区分人员组，使用：用于在人员后跟性别");
 	// 添加至布局
 	StuName_TextInputSizer->Add(StudentNameInputText, 0, wxEXPAND | wxRIGHT, 10);
 	StuName_TextInputSizer->Add(StudentNameInput, 0, wxEXPAND);
