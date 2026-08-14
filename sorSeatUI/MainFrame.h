@@ -1,5 +1,6 @@
 #pragma once
 #include "sorButton.h"
+#include "IpcCommon.h"
 #include <wx/wx.h>
 #include <wx/simplebook.h>
 #include <wx/bmpbuttn.h>
@@ -7,6 +8,9 @@
 #include <wx/tglbtn.h>
 #include <wx/filepicker.h>
 #include <vector>
+
+class wxTextCtrl;
+class wxSpinCtrl;
 
 class MainFrame : public wxFrame
 {
@@ -27,6 +31,10 @@ private:
 	wxButton *StartButton = nullptr;
 	wxButton *PositionButton = nullptr;
 	wxToggleButton *AdvancedSetting = nullptr;
+	wxTextCtrl *StudentNameInput = nullptr; // 手动输入人员名
+	wxTextCtrl *RulesInput = nullptr;       // 规则输入
+	wxSpinCtrl *columnsNum = nullptr;       // 座位列数
+	wxSpinCtrl *groupNum = nullptr;         // 每组列数
 	std::vector<sorButton *> buttonGroup;
 	std::vector<std::vector<wxString>> m_resultRows;
 	bool m_isDragging = false;
@@ -57,6 +65,10 @@ private:
 	void OnCloseClicked(wxCommandEvent &evt);
 	void OnToggle(wxCommandEvent &evt);				 // 设置切换状态
 	void OnExportLogFile(wxFileDirPickerEvent &evt); // 导出日志
+	void OnExportText(wxCommandEvent &evt);			 // 导出 TXT
+	void OnExportExcel(wxCommandEvent &evt);		 // 导出 Excel
+	void OnExportPNG(wxCommandEvent &evt);			 // 导出 PNG（未实现）
+	void SendExport(ipc::Op op, const std::string &dirUtf8); // 通用导出请求
 	void UpdataResultPanel();						 // 刷新ResultPanel
 	void ParseResultText(const wxString &text);		 // 解析文本到m_resultRows
 	// 拖拽窗口事件处理函数

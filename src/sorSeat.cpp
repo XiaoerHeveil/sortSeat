@@ -1,275 +1,269 @@
-#ifdef _MSC_VER
-// MSVC编译器下，忽略弃用警告
-#pragma warning(disable : 4996)
-#else
-// GCC编译器下，忽略弃用警告
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
-#define PLATFORM_WINDOWS 1
-#define PLATFORM_OTHER 0
+#include "IpcCommon.h"
+#include "Log.h"
+#include "NamedPipe.h"
+#include "SeatEngine.h"
+#include "Validate.h"
+#include "sorting.h"
+#include "student.h"
 
-#if defined(_WIN32)
-// Windows平台，因为该平台下的换行是/r/n是两个字节，但是在读取的时候只有一个字节，非常坑
-#define TEXT_OFFSET PLATFORM_WINDOWS
-#else
-// 其他平台的文件读取在只读模式下不偏移
-#define TEXT_OFFSET PLATFORM_OTHER
-#endif
+#include <OpenXLSX/OpenXLSX.hpp>
 
-#include <iostream>
-#include <string>
-#include <memory>
-#include <vector>
 #include <filesystem>
 #include <fstream>
-#include "student.h"
-#include "fileInput.h"
-#include "sorting.h"
-#include "Log.h"
+#include <iostream>
+#include <string>
+#include <vector>
 
-int main(void)
-{
-	Log::init("sortSeat");
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
-	using std::cerr;
-	using std::cin;
-	using std::cout;
-	using std::endl;
+using namespace ipc;
 
-	// 创建一个容器，用于存储多个Student对象
-	const int peopleNumber = 42; // 这个人数仅供测试，实际人数不一定为42
-	string workSheet = "Sheet1";
-	std::vector<std::shared_ptr<Student>> studentGroup;
-	while (true)
-	{
-		cout << "请输入你要读取文件的路径：\n";
-		std::string path;
-		cin >> path;
-		int fileType = -1; // 文件类型，用于后续condition/groupCondition判断
+namespace {
 
-		// 判断文件类型
-		try
-		{
-			path = fileExtensionEscape(path);
-		}
-		catch (const NullPathException &e)
-		{
-			cout << e.what() << endl;
-		}
-		catch (const PathIllegalException &e)
-		{
-			cout << e.what() << endl;
-		}
+// 将原生窄字符路径（Windows 下为 ANSI/GBK）转为 UTF-8，用于 --test 命令行参数
+std::string toUtf8(const char *native) {
+#ifdef _WIN32
+    try {
+        return pathToUtf8(std::filesystem::path(native));
+    } catch (...) {
+        return native;
+    }
+#else
+    return native;
+#endif
+}
 
-		try
-		{
-			fileType = fileExtension(path);
-			switch (fileType)
-			{
-			case 0:
-			{
-				// 顺着路径打开文件
-				ifstream inFile;
-				// 遇到权限问题直接抛异常
-				inFile.exceptions(ifstream::failbit | ifstream::badbit);
-				inFile.open(path);
-				// 在外部控制流位置
-				for (int i = 1;; ++i)
-				{
-					string name = getNameTXT(inFile);
-					string sex = getSexTXT(inFile);
-					// 查询下一次换行的位置
-					long lineBreakPosition = searchStr(inFile, '\n', 0, i);
-					if (lineBreakPosition == -1)
-					{
-						cout << "找完了" << endl;
-						break;
-					}
-					if (name.empty() && sex.empty())
-					{
-						cout << "找完了" << endl;
-						break;
-					}
-					// 将姓名和性别以及座位号添加进Student类中
-					studentGroup.push_back(std::make_shared<Student>(name, sex, i));
-					// 将流跳转到下一次换行符后
-					inFile.seekg(lineBreakPosition + TEXT_OFFSET);
-				}
-				// 判断容器是否为空
-				if (studentGroup.size() == 0)
-				{
-					throw NullFile("TXT文件为空！");
-				}
+// 解析结果文本为二维网格（空格=空单元格，逗号=相邻单元格）
+std::vector<std::vector<std::string>> parseResultGrid(const std::string &text) {
+    std::vector<std::vector<std::string>> grid;
+    size_t pos = 0;
+    while (pos <= text.size()) {
+        size_t nl = text.find('\n', pos);
+        std::string line = (nl == std::string::npos)
+                               ? text.substr(pos)
+                               : text.substr(pos, nl - pos);
+        pos = (nl == std::string::npos) ? text.size() + 1 : nl + 1;
 
-				break;
-			}
-			case 1:
-			{
-				ifstream inFile;
-				inFile.exceptions(ifstream::failbit | ifstream::badbit);
-				inFile.open(path);
-				for (int i = 1;; ++i)
-				{
-					string name = getNameCSV(inFile);
-					string sex = getSexCSV(inFile);
-					long lineBreakPosition = searchStr(inFile, '\n', 0, i);
-					if (lineBreakPosition == -1)
-					{
-						cout << "找完了" << endl;
-						break;
-					}
-					if (name.empty() && sex.empty())
-					{
-						cout << "找完了" << endl;
-						break;
-					}
-					studentGroup.push_back(std::make_shared<Student>(name, sex, i));
-					inFile.seekg(lineBreakPosition + TEXT_OFFSET);
-				}
-				if (studentGroup.size() == 0)
-				{
-					throw NullFile("CSV文件为空！");
-				}
+        std::vector<std::string> row;
+        size_t sp = 0;
+        while (sp <= line.size()) {
+            size_t next = line.find(' ', sp);
+            std::string elem = (next == std::string::npos)
+                                   ? line.substr(sp)
+                                   : line.substr(sp, next - sp);
+            sp = (next == std::string::npos) ? line.size() + 1 : next + 1;
+            if (elem.empty()) {
+                row.push_back("");
+                continue;
+            }
+            size_t cp = 0;
+            while (cp <= elem.size()) {
+                size_t cn = elem.find(',', cp);
+                std::string name = (cn == std::string::npos)
+                                       ? elem.substr(cp)
+                                       : elem.substr(cp, cn - cp);
+                row.push_back(name);
+                if (cn == std::string::npos)
+                    break;
+                cp = cn + 1;
+            }
+        }
+        grid.push_back(std::move(row));
+    }
+    return grid;
+}
 
-				break;
-			}
-			case 2:
-			{
-				// 打开XLSX文件
-				OpenXLSX::XLDocument xlsx;
-				xlsx.open(path);
+// 复制日志目录下所有文件到目标目录
+bool exportLogs(const std::string &destDirUtf8) {
+#ifdef _WIN32
+    std::filesystem::path dest = std::filesystem::u8path(destDirUtf8);
+    wchar_t exePath[MAX_PATH] = {0};
+    GetModuleFileNameW(nullptr, exePath, MAX_PATH);
+    std::filesystem::path logDir =
+        std::filesystem::path(exePath).parent_path() / L"log";
+    if (!std::filesystem::exists(logDir))
+        return false;
+    std::filesystem::create_directories(dest);
+    int copied = 0;
+    for (const auto &entry : std::filesystem::directory_iterator(logDir)) {
+        if (entry.is_regular_file()) {
+            std::filesystem::copy_file(entry.path(),
+                                       dest / entry.path().filename(),
+                                       std::filesystem::copy_options::overwrite_existing);
+            ++copied;
+        }
+    }
+    return copied > 0;
+#else
+    (void)destDirUtf8;
+    return false;
+#endif
+}
 
-				auto wb = xlsx.workbook();
-				OpenXLSX::XLWorksheet ws;
-				try
-				{
-					ws = wb.worksheet(workSheet);
-				}
-				catch (const OpenXLSX::XLSheetError &e)
-				{
-					cout << "这可能是您更改了工作表名导致没有找到您期望的工作表，请输入此工作表名：" << endl;
-					cin >> workSheet;
-					// 重新读取
-					ws = wb.worksheet(workSheet);
-				}
-				// OpenXLSX 这里不需要手动触发公式计算，直接读取工作表内容即可
-				// 在每一行读取
-				try
-				{
-					for (int i = 1;; ++i)
-					{
-						string name = getNameXLSX(ws, i);
-						string sex = getSexXLSX(ws, i);
-						studentGroup.push_back(std::make_shared<Student>(name, sex, i));
-					}
-				}
-				catch (expectationCellEmpty)
-				{
-					if (studentGroup.size() == 0)
-						throw NullFile("XLSX文件为空！");
-				}
+} // namespace
 
-				break;
-			}
-			default:
-				cout << "不支持的文件！" << endl;
-			}
-		}
-		catch (const std::ios_base::failure &e)
-		{
-			cerr << "访问被拒！" << endl;
-			cerr << "错误：" << e.what() << endl;
-		}
-		catch (const NullFile &e)
-		{
-			cerr << e.what() << endl;
-		}
-		catch (const OpenXLSX::XLException &e)
-		{
-			cerr << "访问被拒！" << e.what() << endl;
-		}
-		catch (const expectationCellTypeError &e)
-		{
-			cerr << e.what() << endl;
-		}
-		cout << "请输入你想分配的座位列：\n";
-		int x_row;
-		cin >> x_row;
-		cout << "每组有几列？\n";
-		int groupRow;
-		cin >> groupRow;
+// CLI 测试模式：sortSeat --test <学生文件> <规则文件> <列数> <每组列数>
+static int runTestMode(int argc, char **argv) {
+    if (argc < 6) {
+        std::cerr << "用法: sortSeat --test <学生文件> <规则文件> <列数> <每组列数>\n";
+        return 1;
+    }
+    seat::SeatRequest req;
+    req.studentPath = toUtf8(argv[2]);
+    req.rulesPath = toUtf8(argv[3]);
+    req.x_row = std::stoi(argv[4]);
+    req.groupRow = std::stoi(argv[5]);
+    try {
+        auto r = seat::compute(req);
+        printSeatLayout(r.grid.data(), r.rows, r.columns, r.students);
+        std::cout << "\n===== 结果文本（Result Text） =====\n"
+                  << r.text << "\n";
+        return 0;
+    } catch (const std::exception &e) {
+        std::cerr << "排序失败: " << e.what() << "\n";
+        return 1;
+    }
+}
 
-		int y_column = peopleNumber / x_row + 1;
-		// 使用 vector 动态创建二维数组，所有元素初始化为 0
-		std::vector<std::vector<unsigned int>> seatNumber(x_row, std::vector<unsigned int>(y_column, 0));
+int main(int argc, char *argv[]) {
+    Log::init("sortSeat");
 
-		// 编号会被保存在这个数组中，所有排序都是基于编号进行映射（动号不动人）
-		// 因为需要修改顺序，因此拷贝内置整形比拷贝整个对象的开销要小很多
-		// 保留数字：0->空座位（或者这里还没有排座）；255->无法分配；254,253,252,251,250->条件排序（目前最多5个条件，后续增添）
+    if (argc >= 2 && std::string(argv[1]) == "--test") {
+        int rc = runTestMode(argc, argv);
+        Log::shutdown();
+        return rc;
+    }
 
-		// 读取DSL规则文件并排序
-		std::string dslPath = "test/ABCD.txt";
-		std::ifstream dslFile(dslPath);
-		std::vector<std::string> ruleLines;
-		if (dslFile.is_open())
-		{
-			std::string ruleLine;
-			while (std::getline(dslFile, ruleLine))
-			{
-				auto first = std::find_if(ruleLine.begin(), ruleLine.end(),
-										  [](unsigned char ch)
-										  { return !std::isspace(ch); });
-				if (first != ruleLine.end())
-					ruleLines.push_back(ruleLine);
-			}
-			dslFile.close();
+    SORLOG_INFO("sortSeat 后端启动，等待前端连接...");
 
-			sortFunctionsByPriority(ruleLines);
+    std::string lastResultPath;
+    bool running = true;
+    while (running) {
+        PipeServer server;
+        if (!server.createAndWait()) {
+            Sleep(500);
+            continue;
+        }
+        SORLOG_INFO("前端已连接");
 
-			// 写入临时文件
-			std::filesystem::path tempDir =
-				std::filesystem::temp_directory_path();
-			std::filesystem::path tempFile =
-				tempDir / "seat_rules_sorted.txt";
-			std::ofstream outFile(tempFile);
-			if (outFile.is_open())
-			{
-				for (const auto &r : ruleLines)
-					outFile << r << '\n';
-				outFile.close();
-				cout << "已排序的规则已写入: " << tempFile.string()
-					 << endl;
-			}
-		}
-		else
-		{
-			cout << "未找到DSL规则文件: " << dslPath
-				 << "，使用真随机模式" << endl;
-		}
+        while (running) {
+            Message msg;
+            if (!server.receive(msg)) {
+                SORLOG_INFO("前端断开连接");
+                break;
+            }
+            Message reply;
+            switch (msg.op) {
+            case Op::HELLO:
+                reply.op = Op::ACK;
+                server.send(reply);
+                break;
 
-		// 解析并执行规则
-		if (!ruleLines.empty())
-		{
-			auto rules = parseRuleLines(ruleLines);
-			executeRules(rules, &seatNumber[0][0], x_row, y_column,
-						 groupRow, studentGroup, path, fileType);
-			cout << "已执行 " << rules.size() << " 条规则" << endl;
-			constrainedFill(&seatNumber[0][0], x_row, y_column,
-							groupRow, studentGroup);
-		}
-		else
-		{
-			randomFill(&seatNumber[0][0], x_row, y_column,
-					   studentGroup);
-		}
+            case Op::PING:
+                reply.op = Op::PONG;
+                server.send(reply);
+                break;
 
-		// 打印座位布局
-		printSeatLayout(&seatNumber[0][0], x_row, y_column,
-						studentGroup);
+            case Op::START: {
+                try {
+                    auto fields = unpackFields(msg.payload);
+                    if (fields.size() < 4)
+                        throw std::runtime_error("START 参数不足");
+                    seat::SeatRequest req;
+                    req.x_row = std::stoi(fields[0]);
+                    req.groupRow = std::stoi(fields[1]);
+                    req.studentPath = fields[2];
+                    req.rulesPath = fields[3];
+                    lastResultPath = seat::computeToTempFile(req);
+                    reply.op = Op::RESULT;
+                    reply.payload = lastResultPath;
+                    SORLOG_INFO("排序完成，结果文件: {}", lastResultPath);
+                } catch (const std::exception &e) {
+                    SORLOG_ERROR("START 处理失败: {}", e.what());
+                    reply.op = Op::ERR;
+                    reply.payload = e.what();
+                }
+                server.send(reply);
+                break;
+            }
 
-		break;
-	}
+            case Op::EXPORT_TXT: {
+                try {
+                    if (lastResultPath.empty())
+                        throw std::runtime_error("尚未生成排序结果");
+                    std::filesystem::path dest =
+                        std::filesystem::u8path(msg.payload);
+                    std::filesystem::create_directories(dest);
+                    std::filesystem::copy_file(
+                        std::filesystem::u8path(lastResultPath),
+                        dest / L"seat_result.txt",
+                        std::filesystem::copy_options::overwrite_existing);
+                    reply.op = Op::ACK;
+                } catch (const std::exception &e) {
+                    reply.op = Op::ERR;
+                    reply.payload = e.what();
+                }
+                server.send(reply);
+                break;
+            }
 
-	Log::shutdown();
-	return 0;
+            case Op::EXPORT_EXCEL: {
+                try {
+                    if (lastResultPath.empty())
+                        throw std::runtime_error("尚未生成排序结果");
+                    std::filesystem::path dest =
+                        std::filesystem::u8path(msg.payload);
+                    std::filesystem::create_directories(dest);
+                    std::ifstream in(std::filesystem::u8path(lastResultPath));
+                    std::string text((std::istreambuf_iterator<char>(in)),
+                                     std::istreambuf_iterator<char>());
+                    auto grid = parseResultGrid(text);
+
+                    std::filesystem::path outPath = dest / L"seat_result.xlsx";
+                    OpenXLSX::XLDocument doc;
+                    doc.create(outPath.string());
+                    auto ws = doc.workbook().worksheet("Sheet1");
+                    for (size_t r = 0; r < grid.size(); ++r)
+                        for (size_t c = 0; c < grid[r].size(); ++c)
+                            if (!grid[r][c].empty())
+                                ws.cell(r + 1, c + 1).value() = grid[r][c];
+                    doc.save();
+                    doc.close();
+                    reply.op = Op::ACK;
+                } catch (const std::exception &e) {
+                    reply.op = Op::ERR;
+                    reply.payload = e.what();
+                }
+                server.send(reply);
+                break;
+            }
+
+            case Op::EXPORT_LOG: {
+                if (exportLogs(msg.payload))
+                    reply.op = Op::ACK;
+                else {
+                    reply.op = Op::ERR;
+                    reply.payload = "日志导出失败（可能无日志文件）";
+                }
+                server.send(reply);
+                break;
+            }
+
+            case Op::SHUTDOWN:
+                running = false;
+                break;
+
+            default:
+                reply.op = Op::ERR;
+                reply.payload = "未知操作码";
+                server.send(reply);
+                break;
+            }
+        }
+    }
+
+    Log::shutdown();
+    return 0;
 }

@@ -1,6 +1,8 @@
 #include "MainFrame.h"
 #include "SeatPanel.h"
 #include "SequenceButton.h"
+#include "IpcClient.h"
+#include "Validate.h"
 #include <wx/dcmemory.h>
 #include <wx/spinctrl.h>
 #include <wx/filename.h>
@@ -8,7 +10,35 @@
 #include <wx/tokenzr.h>
 #include <wx/choice.h>
 #include <wx/hyperlink.h>
+#include <wx/dirdlg.h>
+#include <chrono>
+#include <filesystem>
+#include <fstream>
 #include <string>
+
+namespace {
+
+// 将内容写入 %temp% 文本文件，返回 UTF-8 路径
+std::string WriteTempFile(const std::string &prefix, const std::string &content)
+{
+    std::filesystem::path dir = std::filesystem::temp_directory_path();
+    auto ts = std::chrono::steady_clock::now().time_since_epoch().count();
+    std::filesystem::path file = dir / (prefix + "_" + std::to_string(ts) + ".txt");
+    std::ofstream out(file, std::ios::binary);
+    out << content;
+    out.close();
+    return ipc::pathToUtf8(std::filesystem::absolute(file));
+}
+
+// 读取 UTF-8 路径的文本文件内容
+std::string ReadFileUtf8(const std::string &utf8path)
+{
+    std::ifstream in(std::filesystem::u8path(utf8path), std::ios::binary);
+    return std::string((std::istreambuf_iterator<char>(in)),
+                       std::istreambuf_iterator<char>());
+}
+
+} // namespace
 
 MainFrame::MainFrame(const wxString &title)
 	: wxFrame(nullptr, wxID_ANY, title, wxDefaultPosition, wxDefaultSize, wxBORDER_NONE)
@@ -263,10 +293,10 @@ MainFrame::MainFrame(const wxString &title)
 	fileFont.SetPointSize(21);
 	fileName->SetFont(fileFont);
 	// 输入框
-	wxSpinCtrl *columnsNum = new wxSpinCtrl(Student_NumberInputPanel, wxID_ANY, wxEmptyString,
-											wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS | wxSP_WRAP, 1, 12, 6);
-	wxSpinCtrl *groupNum = new wxSpinCtrl(Student_NumberInputPanel, wxID_ANY, wxEmptyString,
-										  wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS | wxSP_WRAP, 1, 6, 4);
+	columnsNum = new wxSpinCtrl(Student_NumberInputPanel, wxID_ANY, wxEmptyString,
+								wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS | wxSP_WRAP, 1, 12, 6);
+	groupNum = new wxSpinCtrl(Student_NumberInputPanel, wxID_ANY, wxEmptyString,
+							  wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS | wxSP_WRAP, 1, 6, 4);
 	// 添加进布局
 	Student_NumberInputSizer->AddSpacer(10);
 	Student_NumberInputSizer->Add(columnsText, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
@@ -293,8 +323,8 @@ MainFrame::MainFrame(const wxString &title)
 	StudentNameInputFont.SetPointSize(18);
 	StudentNameInputText->SetFont(StudentNameInputFont);
 	// 人员输入框
-	wxTextCtrl *StudentNameInput = new wxTextCtrl(StuName_TextInputPanel, wxID_ANY,
-												  L"请使用，；[空格]进行区分人员组，使用：用于在人员后跟性别", wxDefaultPosition, wxSize(-1, 400), wxTE_MULTILINE);
+	StudentNameInput = new wxTextCtrl(StuName_TextInputPanel, wxID_ANY,
+									  L"请使用，；[空格]进行区分人员组，使用：用于在人员后跟性别", wxDefaultPosition, wxSize(-1, 400), wxTE_MULTILINE);
 	// 添加至布局
 	StuName_TextInputSizer->Add(StudentNameInputText, 0, wxEXPAND | wxRIGHT, 10);
 	StuName_TextInputSizer->Add(StudentNameInput, 0, wxEXPAND);
@@ -414,10 +444,8 @@ MainFrame::MainFrame(const wxString &title)
 	// 创建布局
 	wxBoxSizer *Rules_InputSizer = new wxBoxSizer(wxVERTICAL);
 	// 创建文本输入控件
-	wxTextCtrl *RulesInput = new wxTextCtrl(Rules_InputPanel, wxID_ANY, wxEmptyString,
-											wxDefaultPosition, wxSize(-1, 400), wxTE_MULTILINE);
-	wxString RulesInputText = RulesInput->GetValue();
-	// ！E！这里需要写入一个纯文本文件，后续编写
+	RulesInput = new wxTextCtrl(Rules_InputPanel, wxID_ANY, wxEmptyString,
+								wxDefaultPosition, wxSize(-1, 400), wxTE_MULTILINE);
 	// 添加布局
 	Rules_InputSizer->Add(RulesInput, 1, wxEXPAND | wxALL);
 	Rules_InputPanel->SetSizer(Rules_InputSizer);
@@ -482,12 +510,15 @@ MainFrame::MainFrame(const wxString &title)
 	wxButton *ExportTextButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, L"导出TXT文件",
 											  wxDefaultPosition, wxSize(160, 40));
 	ExportTextButton->SetBackgroundColour(wxColour(0, 120, 255));
-	wxButton *ExportExcelButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, L"导出CSV文件",
+	ExportTextButton->Bind(wxEVT_BUTTON, &MainFrame::OnExportText, this);
+	wxButton *ExportExcelButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, L"导出Excel文件",
 											   wxDefaultPosition, wxSize(160, 40));
 	ExportExcelButton->SetBackgroundColour(wxColour(0, 165, 40));
-	wxButton *ExportPNGButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, L"导出Excel文件",
+	ExportExcelButton->Bind(wxEVT_BUTTON, &MainFrame::OnExportExcel, this);
+	wxButton *ExportPNGButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, L"导出PNG图片",
 											 wxDefaultPosition, wxSize(160, 40));
 	ExportPNGButton->SetBackgroundColour(wxColour(153, 51, 255));
+	ExportPNGButton->Bind(wxEVT_BUTTON, &MainFrame::OnExportPNG, this);
 	// 添加布局
 	ResDis_ExportButtonSizer->Add(ExportTextButton, 0, wxEXPAND | wxALL, 10);
 	ResDis_ExportButtonSizer->AddStretchSpacer();
@@ -768,10 +799,87 @@ void MainFrame::OnInforClicked(wxCommandEvent &evt)
 
 void MainFrame::OnStartClicked(wxCommandEvent &evt)
 {
+	// 判断是否输入了人员或选择了人员文件
+	bool hasManual = !StudentNameInput->GetValue().IsEmpty();
+	bool hasFile = !m_filePath.IsEmpty();
+	if (!hasManual && !hasFile)
+	{
+		wxMessageBox(L"您还没有输入任何有效数据或选择有效文件", L"提示",
+					 wxOK | wxICON_INFORMATION);
+		return;
+	}
+
+	auto &backend = ipc::BackendClient::instance();
+	if (!backend.isOpen())
+	{
+		wxMessageBox(L"主进程未就绪，请稍后重试", L"错误", wxOK | wxICON_ERROR);
+		return;
+	}
+
+	// 学生名单：手动输入写 %temp%，否则使用选择的文件路径
+	std::string studentPath;
+	if (hasManual)
+	{
+		std::string normalized = validate::normalizeStudentInput(
+			StudentNameInput->GetValue().utf8_string());
+		studentPath = WriteTempFile("sortSeat_students", normalized);
+	}
+	else
+	{
+		studentPath = m_filePath.utf8_string();
+	}
+
+	// 规则：输入框写 %temp%，否则使用导入的规则文件路径
+	std::string rulesPath;
+	if (!RulesInput->GetValue().IsEmpty())
+	{
+		std::string normalized = validate::normalizeRulesInput(
+			RulesInput->GetValue().utf8_string());
+		rulesPath = WriteTempFile("sortSeat_rules", normalized);
+	}
+	else
+	{
+		rulesPath = m_rulesFilePath.utf8_string();
+	}
+
+	int x_row = columnsNum->GetValue();
+	int groupRow = groupNum->GetValue();
+	ipc::Message msg;
+	msg.op = ipc::Op::START;
+	msg.payload = ipc::packFields({std::to_string(x_row), std::to_string(groupRow),
+								   studentPath, rulesPath});
+	if (!backend.send(msg))
+	{
+		wxMessageBox(L"发送失败", L"错误", wxOK | wxICON_ERROR);
+		return;
+	}
+
+	ipc::Message resp;
+	if (!backend.receive(resp, 15000))
+	{
+		wxMessageBox(L"主进程无响应", L"错误", wxOK | wxICON_ERROR);
+		return;
+	}
+	if (resp.op == ipc::Op::ERR)
+	{
+		wxMessageBox(wxString::FromUTF8(resp.payload), L"排序失败",
+					 wxOK | wxICON_ERROR);
+		return;
+	}
+	if (resp.op != ipc::Op::RESULT)
+	{
+		wxMessageBox(L"未知响应", L"错误", wxOK | wxICON_ERROR);
+		return;
+	}
+
+	std::string text = ReadFileUtf8(resp.payload);
+	ParseResultText(wxString::FromUTF8(text));
+
 	sortResult = true;
-	// 启用归位按钮，并禁用自己
 	PositionButton->Enable(true);
 	StartButton->Enable(false);
+	simpleBook->SetSelection(1);
+	UpdataResultPanel();
 }
 
 void MainFrame::OnPositionClicked(wxCommandEvent &evt)
@@ -825,13 +933,70 @@ void MainFrame::OnExportLogFile(wxFileDirPickerEvent &evt)
 	{
 		LogFilePath = true;
 		m_logFilePath = path;
-		// TODO: 向业务进程报告路径字符串 m_logFilePath（暂留空）
-		// 像业务进程报告路径字符串后重新将LogFilePath设置为false
+		SendExport(ipc::Op::EXPORT_LOG, path.utf8_string());
+		LogFilePath = false;
 	}
 	else
 	{
 		LogFilePath = false;
 		m_logFilePath.clear();
+	}
+}
+
+void MainFrame::OnExportText(wxCommandEvent &evt)
+{
+	wxDirDialog dlg(this, L"选择导出目录", wxEmptyString,
+					wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+	if (dlg.ShowModal() != wxID_OK)
+		return;
+	SendExport(ipc::Op::EXPORT_TXT, dlg.GetPath().utf8_string());
+}
+
+void MainFrame::OnExportExcel(wxCommandEvent &evt)
+{
+	wxDirDialog dlg(this, L"选择导出目录", wxEmptyString,
+					wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+	if (dlg.ShowModal() != wxID_OK)
+		return;
+	SendExport(ipc::Op::EXPORT_EXCEL, dlg.GetPath().utf8_string());
+}
+
+void MainFrame::OnExportPNG(wxCommandEvent &evt)
+{
+	wxMessageBox(L"目前还没有完成导出PNG图片的逻辑，请等待后续版本更新", L"提示",
+				 wxOK | wxICON_INFORMATION);
+}
+
+void MainFrame::SendExport(ipc::Op op, const std::string &dirUtf8)
+{
+	auto &backend = ipc::BackendClient::instance();
+	if (!backend.isOpen())
+	{
+		wxMessageBox(L"主进程未就绪", L"错误", wxOK | wxICON_ERROR);
+		return;
+	}
+	ipc::Message msg;
+	msg.op = op;
+	msg.payload = dirUtf8;
+	if (!backend.send(msg))
+	{
+		wxMessageBox(L"发送失败", L"错误", wxOK | wxICON_ERROR);
+		return;
+	}
+	ipc::Message resp;
+	if (!backend.receive(resp, 10000))
+	{
+		wxMessageBox(L"主进程无响应", L"错误", wxOK | wxICON_ERROR);
+		return;
+	}
+	if (resp.op == ipc::Op::ACK)
+	{
+		wxMessageBox(L"导出成功", L"提示", wxOK | wxICON_INFORMATION);
+	}
+	else
+	{
+		wxMessageBox(wxString::FromUTF8(resp.payload), L"导出失败",
+					 wxOK | wxICON_ERROR);
 	}
 }
 

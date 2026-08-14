@@ -35,7 +35,11 @@ add_library(sorSeatCore STATIC
     src/sorting.cpp
     src/student.cpp
     src/Log.cpp
+    src/NamedPipe.cpp
+    src/Validate.cpp
+    src/SeatEngine.cpp
     sorSeatUI/MainFrame.cpp
+    sorSeatUI/IpcClient.cpp
     sorSeatUI/SeatPanel.cpp
     sorSeatUI/SequenceButton.cpp
     sorSeatUI/sorButton.cpp
