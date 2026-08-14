@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <wx/wx.h>
 #include <wx/sizer.h>
 #include <vector>
@@ -22,13 +22,13 @@ public:
     void SetSelected(bool selected);
 
 private:
-    wxBitmap m_bitmap;          // 原生位图（用于缩放）
-    wxBitmap m_normalBitmap;    // 缩放后的正常位图（彩色）
-    wxBitmap m_selectedBitmap;  // 缩放后的选中位图（单色，颜色为父框架背景色）
+    wxBitmap m_bitmap;         // 原生位图（用于缩放）
+    wxBitmap m_normalBitmap;   // 缩放后的正常位图（彩色）
+    wxBitmap m_selectedBitmap; // 缩放后的选中位图（单色，颜色为父框架背景色）
     wxString m_label;
     bool m_isSelected;
     std::vector<sorButton *> &m_group;
-    wxSize m_iconSize;          // 缩放后的实际尺寸
+    wxSize m_iconSize; // 缩放后的实际尺寸
 
     // 绘制事件处理
     void OnPaint(wxPaintEvent &evt);

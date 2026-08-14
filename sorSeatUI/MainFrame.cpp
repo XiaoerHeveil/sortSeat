@@ -1,4 +1,4 @@
-﻿#include "MainFrame.h"
+#include "MainFrame.h"
 #include "SeatPanel.h"
 #include "SequenceButton.h"
 #include <wx/dcmemory.h>
@@ -95,7 +95,7 @@ MainFrame::MainFrame(const wxString &title)
 	SetUpButton = new sorButton(ButtonPanel, wxID_ANY,
 								wxBitmap("./resource/设置.png", wxBITMAP_TYPE_PNG), "设置", buttonGroup);
 	InformationButton = new sorButton(ButtonPanel, wxID_ANY,
-								wxBitmap("./resource/信息.png", wxBITMAP_TYPE_PNG), "信息", buttonGroup);
+									  wxBitmap("./resource/信息.png", wxBITMAP_TYPE_PNG), "信息", buttonGroup);
 
 	buttonGroup.push_back(HomeButton);
 	buttonGroup.push_back(ResultButton);
@@ -437,11 +437,11 @@ MainFrame::MainFrame(const wxString &title)
 	wxFont ResultDisplayFont = ResultDisplayText->GetFont();
 	ResultDisplayFont.SetPointSize(32);
 	ResultDisplayText->SetFont(ResultDisplayFont);
-	StartButton = new wxButton(ResDis_TextPanel, wxID_ANY, "开始", 
-		wxDefaultPosition, wxSize(160, 60));
+	StartButton = new wxButton(ResDis_TextPanel, wxID_ANY, "开始",
+							   wxDefaultPosition, wxSize(160, 60));
 	StartButton->SetBackgroundColour(wxColour(204, 51, 255));
-	PositionButton = new wxButton(ResDis_TextPanel, wxID_ANY, "归位", 
-		wxDefaultPosition, wxSize(160, 60));
+	PositionButton = new wxButton(ResDis_TextPanel, wxID_ANY, "归位",
+								  wxDefaultPosition, wxSize(160, 60));
 	PositionButton->SetBackgroundColour(wxColour(64, 64, 64));
 	StartButton->Bind(wxEVT_BUTTON, &MainFrame::OnStartClicked, this);
 	PositionButton->Bind(wxEVT_BUTTON, &MainFrame::OnPositionClicked, this);
@@ -462,8 +462,8 @@ MainFrame::MainFrame(const wxString &title)
 	wxFont Result_DispalyFont = Result_DispalyText->GetFont();
 	Result_DispalyFont.SetPointSize(21);
 	Result_DispalyText->SetFont(Result_DispalyFont);
-	wxButton *GotuDispalyButton = new wxButton(Result_DispalyPanel, wxID_ANY, "点击跳转", 
-		wxDefaultPosition, wxSize(-1, 80));
+	wxButton *GotuDispalyButton = new wxButton(Result_DispalyPanel, wxID_ANY, "点击跳转",
+											   wxDefaultPosition, wxSize(-1, 80));
 	GotuDispalyButton->SetBackgroundColour(wxColour(235, 235, 0));
 	GotuDispalyButton->Bind(wxEVT_BUTTON, &MainFrame::OnResultClicked, this);
 	// 添加布局
@@ -476,14 +476,14 @@ MainFrame::MainFrame(const wxString &title)
 	// 添加导出按钮面板
 	wxPanel *ResDis_ExportButtonPanel = new wxPanel(Home_ResultDisplay, wxID_ANY);
 	wxBoxSizer *ResDis_ExportButtonSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxButton *ExportTextButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, "导出TXT文件", 
-		wxDefaultPosition, wxSize(160, 40));
+	wxButton *ExportTextButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, "导出TXT文件",
+											  wxDefaultPosition, wxSize(160, 40));
 	ExportTextButton->SetBackgroundColour(wxColour(0, 120, 255));
 	wxButton *ExportExcelButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, "导出CSV文件",
-		wxDefaultPosition, wxSize(160, 40));
+											   wxDefaultPosition, wxSize(160, 40));
 	ExportExcelButton->SetBackgroundColour(wxColour(0, 165, 40));
 	wxButton *ExportPNGButton = new wxButton(ResDis_ExportButtonPanel, wxID_ANY, "导出Excel文件",
-		wxDefaultPosition, wxSize(160, 40));
+											 wxDefaultPosition, wxSize(160, 40));
 	ExportPNGButton->SetBackgroundColour(wxColour(153, 51, 255));
 	// 添加布局
 	ResDis_ExportButtonSizer->Add(ExportTextButton, 0, wxEXPAND | wxALL, 10);
@@ -511,12 +511,10 @@ MainFrame::MainFrame(const wxString &title)
 	HomeSizer->Add(HomeFoundationPanel, 0, wxEXPAND | wxALL, 10);
 	HomePanel->SetSizer(HomeSizer);
 
-
 	// Result界面
 	// 此字符串仅用作测试参考
 	wxString testText = "张1,张2 张3,张4 张5,张6 张7,张8\n李1,李2 李3,李4 李5,李6 李7,李8\n王1,王2 王3,王4 王5,王6 王7,王8";
 	ParseResultText(testText);
-
 
 	// SetUp界面
 	// 创建主布局
@@ -547,8 +545,8 @@ MainFrame::MainFrame(const wxString &title)
 	SetDarkModePanel->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, 1.5f));
 	themeColourPanels.push_back({SetDarkModePanel, 1.5f});
 	wxBoxSizer *SetDarkModeSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxStaticText *DarkModeText = new wxStaticText(SetDarkModePanel, wxID_ANY, "深色模式", 
-		wxDefaultPosition, wxDefaultSize);
+	wxStaticText *DarkModeText = new wxStaticText(SetDarkModePanel, wxID_ANY, "深色模式",
+												  wxDefaultPosition, wxDefaultSize);
 	wxFont DarkModeFont = DarkModeText->GetFont();
 	DarkModeFont.SetPointSize(21);
 	DarkModeText->SetFont(DarkModeFont);
@@ -556,7 +554,8 @@ MainFrame::MainFrame(const wxString &title)
 	wxString resourceDir = "./resource/AnBtn";
 	std::vector<wxBitmap> frames = LoadButtonFrames(resourceDir, 18);
 	// 容错：如果一张图片都没加载出来，默认给个红色的占位图，防止崩溃
-	if (frames.empty()) {
+	if (frames.empty())
+	{
 		wxLogError("No frames loaded! Creating a dummy red square.");
 		wxBitmap dummy(100, 100, 24);
 		wxMemoryDC dc(dummy);
@@ -610,7 +609,6 @@ MainFrame::MainFrame(const wxString &title)
 	SetThemeColourSizer->Add(SetThemeColour, 0, wxEXPAND | wxALL, 10);
 	SetThemeColourPanel->SetSizer(SetThemeColourSizer);
 
-
 	// ---------------------------高级设置区------------------------------
 
 	// 显示/隐藏高级设置按钮
@@ -637,8 +635,8 @@ MainFrame::MainFrame(const wxString &title)
 	wxFont ExportLogFont = ExportLogText->GetFont();
 	ExportLogFont.SetPointSize(16);
 	ExportLogText->SetFont(ExportLogFont);
-	wxDirPickerCtrl *FileLogPath = new wxDirPickerCtrl(ExportLogPanel, wxID_ANY, 
-		wxEmptyString, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxDIRP_USE_TEXTCTRL | wxDIRP_DIR_MUST_EXIST);
+	wxDirPickerCtrl *FileLogPath = new wxDirPickerCtrl(ExportLogPanel, wxID_ANY,
+													   wxEmptyString, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxDIRP_USE_TEXTCTRL | wxDIRP_DIR_MUST_EXIST);
 	FileLogPath->Bind(wxEVT_DIRPICKER_CHANGED, &MainFrame::OnExportLogFile, this);
 	ExportLogSizer->Add(ExportLogText, 0, wxEXPAND | wxALL, 10);
 	ExportLogSizer->AddStretchSpacer();
@@ -652,13 +650,12 @@ MainFrame::MainFrame(const wxString &title)
 	SetUpSizer->Add(SetThemeColourPanel, 0, wxEXPAND | wxALL, 10);
 	SetUpSizer->Add(AdvancedSettingPanel, 0, wxEXPAND | wxTOP | wxBOTTOM, 10);
 	SetUpSizer->Add(ExportLogPanel, 0, wxEXPAND | wxALL, 10);
-	ExportLogPanel->Hide();	// 默认隐藏，点击高级设置后显示
+	ExportLogPanel->Hide(); // 默认隐藏，点击高级设置后显示
 	SetUpPanel->SetSizer(SetUpSizer);
-
 
 	// Infor界面
 	wxBoxSizer *InforSizer = new wxBoxSizer(wxVERTICAL);
-	
+
 	// 感谢语
 	wxPanel *ThankPanel = new wxPanel(InforPanel, wxID_ANY);
 	wxBoxSizer *ThankSizer = new wxBoxSizer(wxHORIZONTAL);
@@ -744,10 +741,11 @@ void MainFrame::OnHomeClicked(wxCommandEvent &evt)
 	simpleBook->Layout();
 }
 
-void MainFrame::OnResultClicked(wxCommandEvent &evt) {
+void MainFrame::OnResultClicked(wxCommandEvent &evt)
+{
 	// 切换到Result界面
 	simpleBook->SetSelection(1);
-	UpdataResultPanel();	// 保证显示最新内容
+	UpdataResultPanel(); // 保证显示最新内容
 	simpleBook->Layout();
 }
 
@@ -779,7 +777,8 @@ void MainFrame::OnPositionClicked(wxCommandEvent &evt)
 	// 启用开始按钮，并禁用自己
 	StartButton->Enable(true);
 	PositionButton->Enable(false);
-	if (simpleBook->GetSelection() == 1) {
+	if (simpleBook->GetSelection() == 1)
+	{
 		// 如果在当前页，立即刷新
 		UpdataResultPanel();
 	}
@@ -798,15 +797,19 @@ void MainFrame::OnCloseClicked(wxCommandEvent &evt)
 void MainFrame::OnToggle(wxCommandEvent &evt)
 {
 	AdvancedSettingStatus = AdvancedSetting->GetValue();
-	if (AdvancedSettingStatus) {
+	if (AdvancedSettingStatus)
+	{
 		AdvancedSetting->SetLabel("高级设置 ▼");
-	} else {
+	}
+	else
+	{
 		AdvancedSetting->SetLabel("高级设置 ▲");
 	}
 	if (ExportLogPanel)
 		ExportLogPanel->Show(AdvancedSettingStatus);
 	// 刷新SetUp页（第2页）布局与滚动区域
-	if (wxScrolledWindow *setUp = dynamic_cast<wxScrolledWindow *>(simpleBook->GetPage(2))) {
+	if (wxScrolledWindow *setUp = dynamic_cast<wxScrolledWindow *>(simpleBook->GetPage(2)))
+	{
 		setUp->Layout();
 		setUp->FitInside();
 	}
@@ -815,12 +818,15 @@ void MainFrame::OnToggle(wxCommandEvent &evt)
 void MainFrame::OnExportLogFile(wxFileDirPickerEvent &evt)
 {
 	wxString path = evt.GetPath();
-	if (!path.empty() && wxFileName::DirExists(path)) {
+	if (!path.empty() && wxFileName::DirExists(path))
+	{
 		LogFilePath = true;
 		m_logFilePath = path;
 		// TODO: 向业务进程报告路径字符串 m_logFilePath（暂留空）
 		// 像业务进程报告路径字符串后重新将LogFilePath设置为false
-	} else {
+	}
+	else
+	{
 		LogFilePath = false;
 		m_logFilePath.clear();
 	}
@@ -890,23 +896,29 @@ void MainFrame::ParseResultText(const wxString &text)
 	m_resultRows.clear();
 	if (text.IsEmpty())
 		return;
-	
+
 	// 换行分割
 	wxStringTokenizer lineTok(text, "\n", wxTOKEN_RET_EMPTY_ALL);
-	while (lineTok.HasMoreTokens()) {
+	while (lineTok.HasMoreTokens())
+	{
 		wxString line = lineTok.GetNextToken();
 		// 按空格分割，得到元素（可能包含逗号分隔的多个姓名）
 		wxArrayString elements = wxSplit(line, ' ', '\0');
 		std::vector<wxString> row;
-		for (size_t i = 0; i < elements.size(); ++i) {
+		for (size_t i = 0; i < elements.size(); ++i)
+		{
 			wxString elem = elements[i];
-			if (elem.empty()) {
+			if (elem.empty())
+			{
 				// 连续空格：保留一个空位（可根据需求调整）
 				row.push_back(wxEmptyString);
-			} else {
+			}
+			else
+			{
 				// 按逗号拆分，逗号表示连续绘制，不追加额外空格
 				wxArrayString names = wxSplit(elem, ',', '\0');
-				for (size_t j = 0; j < names.size(); ++j) {
+				for (size_t j = 0; j < names.size(); ++j)
+				{
 					row.push_back(names[j]);
 				}
 			}
@@ -1016,7 +1028,7 @@ void MainFrame::ApplyColours()
 	for (auto &p : themeColourPanels)
 		if (p.first)
 			p.first->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, p.second));
-	Refresh();	// 触发整窗重绘
+	Refresh(); // 触发整窗重绘
 }
 
 /**
@@ -1040,14 +1052,19 @@ wxColour MainFrame::AdjustBrightnessByPercent(const wxColour &originalColour, fl
  * 成员函数和普通函数
  */
 
-static std::vector<wxBitmap> LoadButtonFrames(const wxString& basePath, int count) {
+static std::vector<wxBitmap> LoadButtonFrames(const wxString &basePath, int count)
+{
 	std::vector<wxBitmap> frames;
-	for (int i = 0; i < count; ++i) {
+	for (int i = 0; i < count; ++i)
+	{
 		wxString path = wxString::Format("%s/animationButton_%02d.png", basePath, i);
 		wxImage image;
-		if (image.LoadFile(path) && image.IsOk()) {
+		if (image.LoadFile(path) && image.IsOk())
+		{
 			frames.push_back(wxBitmap(image));
-		} else {
+		}
+		else
+		{
 			// 容错处理：如果加载失败，可以用一个空位或默认颜色占位
 			wxLogWarning("Failde to load: %s", path);
 		}

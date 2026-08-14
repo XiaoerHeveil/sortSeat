@@ -1,4 +1,4 @@
-﻿#include "sorButton.h"
+#include "sorButton.h"
 #include <wx/dc.h>
 #include <wx/dcmemory.h>
 #include <wx/colour.h>
@@ -38,13 +38,14 @@ void sorButton::SetSelected(bool selected)
     }
 }
 
-void sorButton::PrepareBitmaps(const wxBitmap& bitmap) {
+void sorButton::PrepareBitmaps(const wxBitmap &bitmap)
+{
     if (!bitmap.IsOk())
         return;
     wxImage img = bitmap.ConvertToImage();
     if (!img.IsOk())
         return;
-    
+
     // 等比例缩放，使变成为ICON_SIZE
     int w = img.GetWidth(), h = img.GetHeight();
     double ratio = (double)ICON_SIZE / std::max(w, h);
@@ -106,19 +107,23 @@ void sorButton::OnPaint(wxPaintEvent &evt)
     dc.DrawText(m_label, textX, textY);
 }
 
-wxBitmap sorButton::CreateMonoBitmap(const wxBitmap& src, const wxColour& colour) {
+wxBitmap sorButton::CreateMonoBitmap(const wxBitmap &src, const wxColour &colour)
+{
     wxImage img = src.ConvertToImage();
     if (!img.HasAlpha())
         return src;
-    
+
     // 直接替换所有不透明像素颜色
     unsigned char *data = img.GetData();
     unsigned char *alpha = img.GetAlpha();
     int w = img.GetWidth(), h = img.GetHeight();
-    for (int y = 0; y < h; ++y) {
-        for (int x = 0; x < w; ++x) {
+    for (int y = 0; y < h; ++y)
+    {
+        for (int x = 0; x < w; ++x)
+        {
             int idx = (y * w + x) * 3;
-            if (alpha[y*w+x] > 0) {
+            if (alpha[y * w + x] > 0)
+            {
                 data[idx] = colour.Red();
                 data[idx + 1] = colour.Green();
                 data[idx + 2] = colour.Blue();
@@ -133,7 +138,8 @@ void sorButton::OnMouseClick(wxMouseEvent &evt)
     // 将同组所有按钮取消选中
     for (auto *btn : m_group)
     {
-        if (btn != this) {
+        if (btn != this)
+        {
             btn->SetSelected(false);
         }
     }

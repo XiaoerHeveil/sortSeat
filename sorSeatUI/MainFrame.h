@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "sorButton.h"
 #include <wx/wx.h>
 #include <wx/simplebook.h>
@@ -22,8 +22,8 @@ private:
 	wxStaticBitmap *logo = nullptr;
 	wxBitmapButton *minimize = nullptr;
 	wxBitmapButton *close = nullptr;
-	wxPoint m_dragOffset;		// 鼠标按下时，鼠标屏幕坐标与窗口屏幕位置的偏移量
-	wxWindow *m_captureWindow = nullptr;	// 当前捕获鼠标的窗口
+	wxPoint m_dragOffset;				 // 鼠标按下时，鼠标屏幕坐标与窗口屏幕位置的偏移量
+	wxWindow *m_captureWindow = nullptr; // 当前捕获鼠标的窗口
 	wxButton *StartButton = nullptr;
 	wxButton *PositionButton = nullptr;
 	wxToggleButton *AdvancedSetting = nullptr;
@@ -55,10 +55,10 @@ private:
 	void OnPositionClicked(wxCommandEvent &evt);
 	void OnMinimizeClicked(wxCommandEvent &evt);
 	void OnCloseClicked(wxCommandEvent &evt);
-	void OnToggle(wxCommandEvent &evt);				// 设置切换状态
-	void OnExportLogFile(wxFileDirPickerEvent &evt);	// 导出日志
-	void UpdataResultPanel();					// 刷新ResultPanel
-	void ParseResultText(const wxString &text);	// 解析文本到m_resultRows
+	void OnToggle(wxCommandEvent &evt);				 // 设置切换状态
+	void OnExportLogFile(wxFileDirPickerEvent &evt); // 导出日志
+	void UpdataResultPanel();						 // 刷新ResultPanel
+	void ParseResultText(const wxString &text);		 // 解析文本到m_resultRows
 	// 拖拽窗口事件处理函数
 	void OnMouseLeftDown(wxMouseEvent &evt);
 	void OnMouseMotion(wxMouseEvent &evt);
@@ -67,7 +67,7 @@ private:
 	// 设置全局颜色
 	void OnSetTitleColour(wxColourPickerEvent &evt);
 	void OnSetThemeColour(wxColourPickerEvent &evt);
-	void ApplyColours();						// 重新应用标题色与主题色到所有相关面板
+	void ApplyColours(); // 重新应用标题色与主题色到所有相关面板
 	// 对亮度进行处理的函数
 	wxColour AdjustBrightnessByPercent(const wxColour &originalColour, float percent);
 

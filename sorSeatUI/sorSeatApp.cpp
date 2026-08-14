@@ -1,4 +1,4 @@
-﻿#include "sorSeatApp.h"
+#include "sorSeatApp.h"
 #include "MainFrame.h"
 
 wxIMPLEMENT_APP(sorSeatApp);

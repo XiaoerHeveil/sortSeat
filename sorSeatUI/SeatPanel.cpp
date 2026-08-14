@@ -1,4 +1,4 @@
-﻿#include "SeatPanel.h"
+#include "SeatPanel.h"
 #include <wx/sizer.h>
 #include <wx/stattext.h>
 

@@ -1,4 +1,4 @@
-﻿#include "SequenceButton.h"
+#include "SequenceButton.h"
 
 SequenceButton::SequenceButton(wxWindow *parent, const std::vector<wxBitmap> &frames)
     : wxStaticBitmap(parent, wxID_ANY, frames.empty() ? wxNullBitmap : frames[0]),
