@@ -1,6 +1,6 @@
 set(CMAKE_TOOLCHAIN_FILE "D:/Code/Cpp/project/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
 
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.21)
 project(sortSeat LANGUAGES CXX)
 
 # 指定UTF-8编码
@@ -76,3 +76,31 @@ endfunction()
 
 sorSeat_copy_resources(sortSeat)
 sorSeat_copy_resources(sorSeatUI)
+
+# ============ 打包（CPack） ============
+# 两个 exe 必须安装到同一目录（前端 IpcClient 在同目录查找 sortSeat.exe）
+install(TARGETS sortSeat sorSeatUI RUNTIME DESTINATION .)
+
+# 运行时 DLL：vcpkg 的 applocal 部署已把全部第三方 DLL 复制到 exe 目录，
+# 这里在安装时按当前构建配置（Release/Debug）收集 *.dll 一并安装。
+install(CODE "
+    file(GLOB _sortseat_dlls \"${CMAKE_BINARY_DIR}/\${CMAKE_INSTALL_CONFIG_NAME}/*.dll\")
+    foreach(_d IN LISTS _sortseat_dlls)
+        file(INSTALL \"\${_d}\" DESTINATION \"\${CMAKE_INSTALL_PREFIX}\")
+    endforeach()
+")
+
+# UI 资源目录
+install(DIRECTORY sorSeatUI/resource/ DESTINATION resource)
+
+set(CPACK_PACKAGE_NAME "sortSeat")
+set(CPACK_PACKAGE_VERSION "0.1.5")
+set(CPACK_PACKAGE_VENDOR "sortSeat")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "sortSeat")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "排座位工具")
+set(CPACK_GENERATOR "NSIS")
+set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
+set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/sorSeatUI/resource/关闭.ico")
+set(CPACK_NSIS_INSTALLED_ICON_NAME "sorSeatUI.exe")
+set(CPACK_CREATE_DESKTOP_LINKS "sorSeatUI")
+include(CPack)
