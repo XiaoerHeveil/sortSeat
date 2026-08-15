@@ -9,6 +9,8 @@ bool sorSeatApp::OnInit()
 {
     Log::init("sorSeatUI");
     MainFrame *mainFrame = new MainFrame(L"排个座");
+    // 统一使用 Logo.ico（资源名 sortSeatIcon），覆盖任务栏/任务管理器/标题栏默认图标
+    mainFrame->SetIcon(wxICON(sortSeatIcon));
     mainFrame->SetClientSize(1280, 720);
     mainFrame->SetSizeHints(wxSize(1280, 720), wxDefaultSize);
     mainFrame->Center();

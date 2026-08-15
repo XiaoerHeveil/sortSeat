@@ -75,6 +75,40 @@ cmake --build build --config Release
 - `build/Debug/sorSeatUI.exe` / `build/Release/sorSeatUI.exe`（前端 GUI）
 - 资源文件自动复制到可执行文件旁的 `resource/` 目录。
 
+## 打包（CPack）
+
+生成 NSIS 安装包：
+
+```bash
+cmake --build build --config Release --target package
+```
+
+产物（main 分支）为 `build/sortSeatInstaller.exe`（win7-gbk 分支为 `sortSeatInstaller_Win7.exe`）。安装包会包含两个 exe、全部运行时 DLL、`resource/`，并在安装前强制展示 EULA（不同意无法安装），安装后在安装目录生成 `Licence/` 文件夹供查看细分协议。
+
+### NSIS 环境变量
+
+CPack 的 NSIS 生成器需要 `makensis.exe`。若 **已加入 PATH**，直接执行上面的打包命令即可。
+
+若 **未加入 PATH**（默认安装于 `D:/Program Files (x86)/NSIS/`），打包前临时把 NSIS 加入 PATH：
+
+```bash
+# 当前会话临时加入 PATH
+export PATH="/d/Program Files (x86)/NSIS:$PATH"
+
+# 然后打包
+cmake --build build --config Release --target package
+```
+
+### 修改版本号
+
+版本号在 [CMakeLists.txt](CMakeLists.txt) 的打包配置区，改动这一处即可（安装包文件名不含版本号，无需另行修改）：
+
+```cmake
+set(CPACK_PACKAGE_VERSION "0.1.5")
+```
+
+> 界面内显示的「早期开发版: Alpha 0.1.5」在 [sorSeatUI/MainFrame.cpp](sorSeatUI/MainFrame.cpp) 中，需同步修改以保持一致。
+
 ## 快速开始
 
 1. 双击运行 `sorSeatUI.exe`（或从命令行启动），程序会自动拉起同目录下的 `sortSeat.exe` 后端并完成握手。

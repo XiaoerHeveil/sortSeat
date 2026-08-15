@@ -61,6 +61,7 @@ target_link_libraries(sortSeat PRIVATE sorSeatCore)
 add_executable(sorSeatUI WIN32
     sorSeatUI/sorSeatApp.cpp
     sorSeatUI/sorSeatApp.h
+    sorSeatUI/sorSeatUI.rc
 )
 target_link_libraries(sorSeatUI PRIVATE sorSeatCore)
 target_compile_definitions(sorSeatUI PRIVATE ${wxWidgets_DEFINITIONS})
@@ -93,14 +94,21 @@ install(CODE "
 # UI 资源目录
 install(DIRECTORY sorSeatUI/resource/ DESTINATION resource)
 
+# 协议：安装后复制到安装目录 Licence 文件夹，供用户查看细分协议
+install(DIRECTORY docs/License/ DESTINATION Licence)
+
 set(CPACK_PACKAGE_NAME "sortSeat")
 set(CPACK_PACKAGE_VERSION "0.1.5")
 set(CPACK_PACKAGE_VENDOR "sortSeat")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "sortSeat")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "排座位工具")
+# 安装包文件名（main 分支为 sortSeatInstaller；win7-gbk 分支为 sortSeatInstaller_Win7）
+set(CPACK_PACKAGE_FILE_NAME "sortSeatInstaller")
 set(CPACK_GENERATOR "NSIS")
 set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
-set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/sorSeatUI/resource/关闭.ico")
+set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/sorSeatUI/resource/Logo.ico")
 set(CPACK_NSIS_INSTALLED_ICON_NAME "sorSeatUI.exe")
 set(CPACK_CREATE_DESKTOP_LINKS "sorSeatUI")
+# EULA：安装前强制展示，不同意无法继续（UTF-8 BOM 编码）
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/docs/License/Licence.txt")
 include(CPack)
