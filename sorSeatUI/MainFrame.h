@@ -34,7 +34,7 @@ private:
 	wxTextCtrl *StudentNameInput = nullptr; // 手动输入人员名
 	wxTextCtrl *RulesInput = nullptr;       // 规则输入
 	wxSpinCtrl *columnsNum = nullptr;       // 座位列数
-	wxSpinCtrl *groupNum = nullptr;         // 每组列数
+	wxSpinCtrl *groupNum = nullptr;         // 小组组数
 	std::vector<sorButton *> buttonGroup;
 	std::vector<std::vector<wxString>> m_resultRows;
 	bool m_isDragging = false;

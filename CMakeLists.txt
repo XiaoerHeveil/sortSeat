@@ -108,7 +108,11 @@ set(CPACK_GENERATOR "NSIS")
 set(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL ON)
 set(CPACK_NSIS_MUI_ICON "${CMAKE_CURRENT_SOURCE_DIR}/sorSeatUI/resource/Logo.ico")
 set(CPACK_NSIS_INSTALLED_ICON_NAME "sorSeatUI.exe")
-set(CPACK_CREATE_DESKTOP_LINKS "sorSeatUI")
+# 桌面快捷方式：安装后在桌面创建「排个座.lnk」指向 sorSeatUI.exe
+set(CPACK_NSIS_CREATE_ICONS_EXTRA
+    "CreateShortCut \\\"$DESKTOP\\\\排个座.lnk\\\" \\\"$INSTDIR\\\\sorSeatUI.exe\\\"")
+set(CPACK_NSIS_DELETE_ICONS_EXTRA
+    "Delete \\\"$DESKTOP\\\\排个座.lnk\\\"")
 # EULA：安装前强制展示，不同意无法继续（UTF-8 BOM 编码）
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/docs/License/Licence.txt")
 include(CPack)

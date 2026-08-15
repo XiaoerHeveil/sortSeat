@@ -306,23 +306,45 @@ static bool evaluateCondition(const std::string &condStr, int position) {
     return firstCond ? true : result;
 }
 
+// ========== Group (小组) helpers ==========
+
+// 总列数 totalColumns 被均分为 groupCount 组，返回第 column 列（0-based）属于第几组（0-based）
+int columnGroup(int column, int groupCount, int totalColumns) {
+    if (totalColumns <= 0) return 0;
+    if (groupCount <= 1) return 0;
+    if (groupCount > totalColumns) groupCount = totalColumns;
+    return column * groupCount / totalColumns;
+}
+
+// 返回第 group（1-based）组的列范围 [startCol, endCol]（0-based 闭区间）
+static void groupColumnRange(int group, int groupCount, int totalColumns,
+                             int &startCol, int &endCol) {
+    if (totalColumns <= 0) { startCol = 0; endCol = -1; return; }
+    if (groupCount <= 1) groupCount = 1;
+    if (groupCount > totalColumns) groupCount = totalColumns;
+    int g = group - 1;
+    if (g < 0) g = 0;
+    if (g >= groupCount) g = groupCount - 1;
+    startCol = (g * totalColumns + groupCount - 1) / groupCount;
+    endCol = ((g + 1) * totalColumns + groupCount - 1) / groupCount - 1;
+}
+
 // ========== Scope parser for groupCondition ==========
 
 struct ScopeRect {
-    int r0 = 0, c0 = 0, r1 = 0, c1 = 0; // inclusive [r0,r1] x [c0,c1]
+    int r0 = 0, c0 = 0, r1 = 0, c1 = 0; // r = 列范围(colIdx)，c = 行范围(rowIdx)
 };
 
 static ScopeRect parseScope(const std::string &scope, int rows, int columns,
-                            int groupCols) {
+                            int groupCount) {
+    // rows = 总列数，columns = 总行数；ScopeRect.r = 列范围(colIdx)，ScopeRect.c = 行范围(rowIdx)
     ScopeRect rect = {0, 0, rows - 1, columns - 1}; // default: entire grid
 
-    auto parseOne = [&](const std::string &token, int &v0, int &v1, bool isRow) {
+    auto parseOne = [&](const std::string &token, int &v0, int &v1) {
         char type = token.back();
         int num = std::stoi(token.substr(0, token.size() - 1));
         if (type == 'G' || type == 'g') {
-            int s = (num - 1) * groupCols;
-            int e = num * groupCols - 1;
-            v0 = s; v1 = e;
+            groupColumnRange(num, groupCount, rows, v0, v1); // rows = 总列数
         } else if (type == 'C' || type == 'c') {
             v0 = num - 1; v1 = num - 1;
         } else if (type == 'R' || type == 'r') {
@@ -330,25 +352,28 @@ static ScopeRect parseScope(const std::string &scope, int rows, int columns,
         }
     };
 
+    auto isColumnToken = [](const std::string &token) {
+        char t = token.back();
+        return t == 'G' || t == 'g' || t == 'C' || t == 'c';
+    };
+
     size_t colon = scope.find(':');
     if (colon == std::string::npos) {
         std::string token = scope;
-        char type = token.back();
-        bool isRow = (type == 'R' || type == 'r');
+        bool col = isColumnToken(token);
         int v0 = 0, v1 = 0;
-        parseOne(token, v0, v1, isRow);
-        if (isRow) { rect.r0 = v0; rect.r1 = v1; }
-        else       { rect.c0 = v0; rect.c1 = v1; }
+        parseOne(token, v0, v1);
+        if (col) { rect.r0 = v0; rect.r1 = v1; }
+        else     { rect.c0 = v0; rect.c1 = v1; }
     } else {
         std::string left = scope.substr(0, colon);
         std::string right = scope.substr(colon + 1);
-        char lt = left.back(), rt = right.back();
-        bool lr = (lt == 'R' || lt == 'r');
+        bool col = isColumnToken(left);
         int lv0 = 0, lv1 = 0, rv0 = 0, rv1 = 0;
-        parseOne(left, lv0, lv1, lr);
-        parseOne(right, rv0, rv1, lr);
-        if (lr) { rect.r0 = lv0; rect.r1 = rv1; }
-        else    { rect.c0 = lv0; rect.c1 = rv1; }
+        parseOne(left, lv0, lv1);
+        parseOne(right, rv0, rv1);
+        if (col) { rect.r0 = lv0; rect.r1 = rv1; }
+        else     { rect.c0 = lv0; rect.c1 = rv1; }
     }
     // Clamp
     if (rect.r0 < 0) rect.r0 = 0;
@@ -361,15 +386,18 @@ static ScopeRect parseScope(const std::string &scope, int rows, int columns,
 // ========== Deskmate placement helper ==========
 
 static bool placeDeskmatePair(unsigned int *seatNumber, int rows, int columns,
-                              int groupCols, unsigned int idx1,
+                              int groupCount, unsigned int idx1,
                               unsigned int idx2) {
-    for (int r = 0; r < rows; ++r) {
-        for (int c = 0; c < columns - 1; ++c) {
-            if (c / groupCols != (c + 1) / groupCols) continue;
-            if (seatNumber[r * columns + c] == 0 &&
-                seatNumber[r * columns + c + 1] == 0) {
-                seatNumber[r * columns + c] = idx1;
-                seatNumber[r * columns + c + 1] = idx2;
+    // rows = 总列数，columns = 总行数；网格列主序 seatNumber[colIdx * columns + rowIdx]
+    for (int r = 0; r < columns; ++r) {          // r = rowIdx
+        for (int c = 0; c < rows - 1; ++c) {     // c = colIdx
+            if (columnGroup(c, groupCount, rows) !=
+                columnGroup(c + 1, groupCount, rows))
+                continue;
+            if (seatNumber[c * columns + r] == EMPTY_SEAT &&
+                seatNumber[(c + 1) * columns + r] == EMPTY_SEAT) {
+                seatNumber[c * columns + r] = idx1;
+                seatNumber[(c + 1) * columns + r] = idx2;
                 return true;
             }
         }
@@ -395,7 +423,7 @@ static void handleSetSeat(const SeatRule &rule, unsigned int *seatNumber,
     int idx = findStudentOrThrow(name, studentGroup);
     for (int i = 0; i < rows * columns; ++i)
         if (seatNumber[i] == static_cast<unsigned int>(idx))
-            seatNumber[i] = 0;
+            seatNumber[i] = EMPTY_SEAT;
     seatNumber[x * columns + y] = static_cast<unsigned int>(idx);
 }
 
@@ -424,7 +452,7 @@ static void handleAdjacent(const SeatRule &rule, unsigned int *seatNumber,
             for (int dc = -radius; dc <= radius; ++dc) {
                 int nr = cx + dr, nc = cy + dc;
                 if (nr >= 0 && nr < rows && nc >= 0 && nc < columns &&
-                    seatNumber[nr * columns + nc] == 0)
+                    seatNumber[nr * columns + nc] == EMPTY_SEAT)
                     seatNumber[nr * columns + nc] = 255;
             }
     }
@@ -464,7 +492,7 @@ static void handleOn(const SeatRule &rule, unsigned int *seatNumber,
         if (placed) continue;
         for (int r = 0; r < rows; ++r) {
             for (int c = 0; c < columns; ++c) {
-                if (seatNumber[r * columns + c] != 0) continue;
+                if (seatNumber[r * columns + c] != EMPTY_SEAT) continue;
                 bool hOk = evaluateCondition(hCond, r + 1);
                 bool vOk = evaluateCondition(vCond, c + 1);
                 bool condOk = isNot ? (!hOk || !vOk) : (hOk && vOk);
@@ -479,7 +507,7 @@ static void handleOn(const SeatRule &rule, unsigned int *seatNumber,
 }
 
 static void handleDeskmate(const SeatRule &rule, unsigned int *seatNumber,
-                           int rows, int columns, int groupCols,
+                           int rows, int columns, int groupCount,
                            std::vector<std::shared_ptr<Student>> &studentGroup) {
     if (rule.args.size() < 2)
         throw functionParameterLacking("deskmate needs 2 args");
@@ -495,33 +523,43 @@ static void handleDeskmate(const SeatRule &rule, unsigned int *seatNumber,
     }
     if (p1 && p2) return;
 
-    if (!placeDeskmatePair(seatNumber, rows, columns, groupCols,
+    if (!placeDeskmatePair(seatNumber, rows, columns, groupCount,
                            static_cast<unsigned int>(idx1),
                            static_cast<unsigned int>(idx2))) {
-        // If already one is placed, try to place the other next to it
-        for (int r = 0; r < rows; ++r) {
-            for (int c = 0; c < columns; ++c) {
-                if (seatNumber[r * columns + c] == static_cast<unsigned int>(idx1)) {
-                    if (c > 0 && seatNumber[r * columns + c - 1] == 0 &&
-                        (c - 1) / groupCols == c / groupCols) {
-                        seatNumber[r * columns + c - 1] = static_cast<unsigned int>(idx2);
+        // 若其中一个已被安排，尝试把另一个放到其左右相邻列（同一行、同组）
+        for (int r = 0; r < columns; ++r) {          // r = rowIdx
+            for (int c = 0; c < rows; ++c) {         // c = colIdx
+                if (seatNumber[c * columns + r] ==
+                    static_cast<unsigned int>(idx1)) {
+                    if (c > 0 && seatNumber[(c - 1) * columns + r] == EMPTY_SEAT &&
+                        columnGroup(c - 1, groupCount, rows) ==
+                            columnGroup(c, groupCount, rows)) {
+                        seatNumber[(c - 1) * columns + r] =
+                            static_cast<unsigned int>(idx2);
                         return;
                     }
-                    if (c + 1 < columns && seatNumber[r * columns + c + 1] == 0 &&
-                        (c + 1) / groupCols == c / groupCols) {
-                        seatNumber[r * columns + c + 1] = static_cast<unsigned int>(idx2);
+                    if (c + 1 < rows && seatNumber[(c + 1) * columns + r] == EMPTY_SEAT &&
+                        columnGroup(c + 1, groupCount, rows) ==
+                            columnGroup(c, groupCount, rows)) {
+                        seatNumber[(c + 1) * columns + r] =
+                            static_cast<unsigned int>(idx2);
                         return;
                     }
                 }
-                if (seatNumber[r * columns + c] == static_cast<unsigned int>(idx2)) {
-                    if (c > 0 && seatNumber[r * columns + c - 1] == 0 &&
-                        (c - 1) / groupCols == c / groupCols) {
-                        seatNumber[r * columns + c - 1] = static_cast<unsigned int>(idx1);
+                if (seatNumber[c * columns + r] ==
+                    static_cast<unsigned int>(idx2)) {
+                    if (c > 0 && seatNumber[(c - 1) * columns + r] == EMPTY_SEAT &&
+                        columnGroup(c - 1, groupCount, rows) ==
+                            columnGroup(c, groupCount, rows)) {
+                        seatNumber[(c - 1) * columns + r] =
+                            static_cast<unsigned int>(idx1);
                         return;
                     }
-                    if (c + 1 < columns && seatNumber[r * columns + c + 1] == 0 &&
-                        (c + 1) / groupCols == c / groupCols) {
-                        seatNumber[r * columns + c + 1] = static_cast<unsigned int>(idx1);
+                    if (c + 1 < rows && seatNumber[(c + 1) * columns + r] == EMPTY_SEAT &&
+                        columnGroup(c + 1, groupCount, rows) ==
+                            columnGroup(c, groupCount, rows)) {
+                        seatNumber[(c + 1) * columns + r] =
+                            static_cast<unsigned int>(idx1);
                         return;
                     }
                 }
@@ -560,25 +598,28 @@ static void handleSetGender(const SeatRule &rule, unsigned int *,
 }
 
 static void handleOverallSituation(const SeatRule &rule, unsigned int *,
-                                   int rows, int columns, int groupCols,
+                                   int rows, int columns, int groupCount,
                                    std::vector<std::shared_ptr<Student>> &) {
     if (rule.args.empty())
         throw functionParameterLacking("overallSituation needs args");
     if (gGenderConstraints.empty())
         gGenderConstraints.resize(rows * columns, 0);
 
-    int numGroups = columns / groupCols;
+    int numGroups = groupCount;
     for (int g = 0; g < numGroups; ++g) {
-        for (int gc = 0;
-             gc < groupCols && gc < static_cast<int>(rule.args.size()); ++gc) {
+        int startCol, endCol;
+        groupColumnRange(g + 1, groupCount, rows, startCol, endCol);
+        int width = endCol - startCol + 1;
+        for (int p = 0;
+             p < width && p < static_cast<int>(rule.args.size()); ++p) {
             char gender = 0;
-            const std::string &gs = rule.args[gc];
+            const std::string &gs = rule.args[p];
             if (gs == "\xE7\x94\xB7" || gs == "male") gender = 'M';
             else if (gs == "\xE5\xA5\xB3" || gs == "female") gender = 'F';
             if (gender == 0) continue;
-            int col = g * groupCols + gc;
-            for (int r = 0; r < rows; ++r)
-                gGenderConstraints[r * columns + col] = gender;
+            int col = startCol + p;
+            for (int r = 0; r < columns; ++r) // r = rowIdx
+                gGenderConstraints[col * columns + r] = gender;
         }
     }
 }
@@ -586,7 +627,7 @@ static void handleOverallSituation(const SeatRule &rule, unsigned int *,
 // ========== condition handler (full implementation) ==========
 
 static void handleCondition(const SeatRule &rule, unsigned int *seatNumber,
-                            int rows, int columns, int groupCols,
+                            int rows, int columns, int groupCount,
                             std::vector<std::shared_ptr<Student>> &studentGroup,
                             int fileType) {
     if (fileType != 1 && fileType != 2) {
@@ -663,13 +704,13 @@ static void handleCondition(const SeatRule &rule, unsigned int *seatNumber,
         if (b < 0) {
             // Single student, place anywhere
             for (int i = 0; i < rows * columns; ++i) {
-                if (seatNumber[i] == 0) {
+                if (seatNumber[i] == EMPTY_SEAT) {
                     seatNumber[i] = static_cast<unsigned int>(a);
                     break;
                 }
             }
         } else {
-            placeDeskmatePair(seatNumber, rows, columns, groupCols,
+            placeDeskmatePair(seatNumber, rows, columns, groupCount,
                               static_cast<unsigned int>(a),
                               static_cast<unsigned int>(b));
         }
@@ -680,7 +721,7 @@ static void handleCondition(const SeatRule &rule, unsigned int *seatNumber,
 
 static void
 handleGroupCondition(const SeatRule &rule, unsigned int *seatNumber, int rows,
-                     int columns, int groupCols,
+                     int columns, int groupCount,
                      std::vector<std::shared_ptr<Student>> &studentGroup,
                      int fileType) {
     if (fileType != 1 && fileType != 2) {
@@ -704,10 +745,25 @@ handleGroupCondition(const SeatRule &rule, unsigned int *seatNumber, int rows,
     std::string order = rule.args[1];    // greater / less
     std::string scope = rule.args[2];
     double basePoint = std::stod(rule.args[3]);
-    int offsetRow = rule.args.size() > 4 ? std::stoi(rule.args[4]) : 0;
-    int offsetCol = rule.args.size() > 5 ? std::stoi(rule.args[5]) : 0;
-    bool fillBehavior =
-        rule.args.size() > 6 ? (rule.args[6] == "TRUE") : true;
+    // 可选参数：offset_row / offset_column 为整数，fill_behavior 为 TRUE/FALSE；
+    // 允许省略偏移直接填 fill_behavior（如 groupCondition(..., 200, TRUE)）。
+    int offsetRow = 0;
+    int offsetCol = 0;
+    bool fillBehavior = true;
+    int intCount = 0;
+    for (size_t i = 4; i < rule.args.size(); ++i) {
+        const std::string &a = rule.args[i];
+        if (a == "TRUE" || a == "true") { fillBehavior = true; break; }
+        if (a == "FALSE" || a == "false") { fillBehavior = false; break; }
+        try {
+            int v = std::stoi(a);
+            if (intCount == 0) offsetRow = v;
+            else if (intCount == 1) offsetCol = v;
+            ++intCount;
+        } catch (...) {
+            break; // 无法识别的尾随参数，忽略
+        }
+    }
 
     // Check reserved number
     if (gNextReserved < 250) {
@@ -721,11 +777,11 @@ handleGroupCondition(const SeatRule &rule, unsigned int *seatNumber, int rows,
     if (!data)
         throw titleNotExistence("title not found: " + title);
 
-    // Parse scope
-    ScopeRect rect = parseScope(scope, rows, columns, groupCols);
-    // Apply offsets (offset_row = column offset, offset_column = row offset)
-    rect.c0 += offsetRow;  rect.c1 += offsetRow;
-    rect.r0 += offsetCol;  rect.r1 += offsetCol;
+    // Parse scope（rect.r = 列范围，rect.c = 行范围）
+    ScopeRect rect = parseScope(scope, rows, columns, groupCount);
+    // Apply offsets (offset_row = 偏移列，offset_column = 偏移行)
+    rect.r0 += offsetRow;  rect.r1 += offsetRow;
+    rect.c0 += offsetCol;  rect.c1 += offsetCol;
     // Clamp
     rect.r0 = std::max(0, std::min(rect.r0, rows - 1));
     rect.r1 = std::max(0, std::min(rect.r1, rows - 1));
@@ -738,7 +794,7 @@ handleGroupCondition(const SeatRule &rule, unsigned int *seatNumber, int rows,
             unsigned int &cell = seatNumber[r * columns + c];
             // Reserved num smaller = higher priority. Smaller can't be
             // overwritten by larger, unless fillBehavior=TRUE.
-            if (cell == 0 ||
+            if (cell == EMPTY_SEAT ||
                 (fillBehavior && cell > static_cast<unsigned int>(reservedNum)))
                 cell = static_cast<unsigned int>(reservedNum);
         }
@@ -815,13 +871,13 @@ handleGroupCondition(const SeatRule &rule, unsigned int *seatNumber, int rows,
         for (int c = rect.c0; c <= rect.c1; ++c)
             if (seatNumber[r * columns + c] ==
                 static_cast<unsigned int>(reservedNum))
-                seatNumber[r * columns + c] = 0;
+                seatNumber[r * columns + c] = EMPTY_SEAT;
 }
 
 // ========== executeRules ==========
 
 void executeRules(const std::vector<SeatRule> &rules, unsigned int *seatNumber,
-                  int rows, int columns, int groupCols,
+                  int rows, int columns, int groupCount,
                   std::vector<std::shared_ptr<Student>> &studentGroup,
                   const std::string &filePath, int fileType) {
     gGenderConstraints.assign(rows * columns, 0);
@@ -841,18 +897,18 @@ void executeRules(const std::vector<SeatRule> &rules, unsigned int *seatNumber,
                 handleOn(rule, seatNumber, rows, columns, studentGroup,
                          rule.isNot);
             } else if (rule.functionName == "deskmate") {
-                handleDeskmate(rule, seatNumber, rows, columns, groupCols,
+                handleDeskmate(rule, seatNumber, rows, columns, groupCount,
                                studentGroup);
             } else if (rule.functionName == "setGender") {
                 handleSetGender(rule, seatNumber, rows, columns, studentGroup);
             } else if (rule.functionName == "overallSituation") {
                 handleOverallSituation(rule, seatNumber, rows, columns,
-                                       groupCols, studentGroup);
+                                       groupCount, studentGroup);
             } else if (rule.functionName == "condition") {
-                handleCondition(rule, seatNumber, rows, columns, groupCols,
+                handleCondition(rule, seatNumber, rows, columns, groupCount,
                                 studentGroup, fileType);
             } else if (rule.functionName == "groupCondition") {
-                handleGroupCondition(rule, seatNumber, rows, columns, groupCols,
+                handleGroupCondition(rule, seatNumber, rows, columns, groupCount,
                                      studentGroup, fileType);
             } else {
                 throw inexistentFunction("unknown function: " +
@@ -872,13 +928,13 @@ void randomFill(unsigned int *seatNumber, int rows, int columns,
                 const std::vector<std::shared_ptr<Student>> &studentGroup) {
     std::vector<int> emptyPositions;
     for (int i = 0; i < rows * columns; ++i)
-        if (seatNumber[i] == 0) emptyPositions.push_back(i);
+        if (seatNumber[i] == EMPTY_SEAT) emptyPositions.push_back(i);
 
     int numStudents = static_cast<int>(studentGroup.size());
     std::vector<bool> placed(numStudents, false);
     for (int i = 0; i < rows * columns; ++i) {
         unsigned int v = seatNumber[i];
-        if (v > 0 && v < 250 && v < static_cast<unsigned int>(numStudents))
+        if (v != EMPTY_SEAT && v < 250 && v < static_cast<unsigned int>(numStudents))
             placed[v] = true;
     }
     std::vector<int> unplaced;
@@ -895,22 +951,22 @@ void randomFill(unsigned int *seatNumber, int rows, int columns,
 }
 
 void constrainedFill(unsigned int *seatNumber, int rows, int columns,
-                     int /*groupCols*/,
+                     int /*groupCount*/,
                      const std::vector<std::shared_ptr<Student>> &studentGroup) {
     // Clear any remaining reserved numbers (250-254) to empty
     for (int i = 0; i < rows * columns; ++i)
         if (seatNumber[i] >= 250 && seatNumber[i] <= 254)
-            seatNumber[i] = 0;
+            seatNumber[i] = EMPTY_SEAT;
 
     std::vector<int> emptyPositions;
     for (int i = 0; i < rows * columns; ++i)
-        if (seatNumber[i] == 0) emptyPositions.push_back(i);
+        if (seatNumber[i] == EMPTY_SEAT) emptyPositions.push_back(i);
 
     int numStudents = static_cast<int>(studentGroup.size());
     std::vector<bool> placed(numStudents, false);
     for (int i = 0; i < rows * columns; ++i) {
         unsigned int v = seatNumber[i];
-        if (v > 0 && v < 250 && v < static_cast<unsigned int>(numStudents))
+        if (v != EMPTY_SEAT && v < 250 && v < static_cast<unsigned int>(numStudents))
             placed[v] = true;
     }
     std::vector<int> unplaced;
@@ -958,20 +1014,21 @@ void constrainedFill(unsigned int *seatNumber, int rows, int columns,
 void printSeatLayout(
     const unsigned int *seatNumber, int rows, int columns,
     const std::vector<std::shared_ptr<Student>> &studentGroup) {
+    // 参数约定：rows = 总列数，columns = 总行数；网格列主序 seatNumber[列*columns+行]
     std::cout << "\n========== Seat Layout ==========\n";
     std::cout << "(Facing blackboard, origin at top-left)\n\n";
     std::cout << "Col:\t";
-    for (int c = 0; c < columns; ++c)
+    for (int c = 0; c < rows; ++c)
         std::cout << c + 1 << "\t";
     std::cout << "\n----";
-    for (int c = 0; c < columns; ++c)
+    for (int c = 0; c < rows; ++c)
         std::cout << "--------";
     std::cout << "\n";
-    for (int r = 0; r < rows; ++r) {
+    for (int r = 0; r < columns; ++r) {
         std::cout << "Row" << r + 1 << "\t";
-        for (int c = 0; c < columns; ++c) {
-            unsigned int val = seatNumber[r * columns + c];
-            if (val == 0) std::cout << "-";
+        for (int c = 0; c < rows; ++c) {
+            unsigned int val = seatNumber[c * columns + r];
+            if (val == EMPTY_SEAT) std::cout << "-";
             else if (val == 255) std::cout << "X";
             else if (val < studentGroup.size())
                 std::cout << studentGroup[val]->getName();

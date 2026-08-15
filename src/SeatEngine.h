@@ -11,7 +11,7 @@ namespace seat {
 
 struct SeatRequest {
     int x_row = 6;        // 座位列数（前端 columnsNum）
-    int groupRow = 4;     // 每组列数（前端 groupNum）
+    int groupCount = 4;   // 小组组数（前端 groupNum）
     std::string studentPath; // 学生名单文件路径（txt/csv/xlsx 或 %temp% 规范化文本）
     std::string rulesPath;   // 规则文件路径（空 = 真随机）
 };
@@ -21,7 +21,7 @@ struct SeatResult {
     std::vector<unsigned int> grid; // 扁平座位表
     int rows = 0;                   // 第一维（= x_row）
     int columns = 0;                // 第二维（= 行数）
-    int groupCols = 0;
+    int groupCount = 0;
     std::string text; // 结果文本（testText 格式）
 };
 
@@ -34,7 +34,7 @@ std::vector<std::string> loadRuleLines(const std::string &path);
 
 // 生成座位结果文本（逗号=同桌相邻，空格=空一格，\n=换行）
 std::string buildResultText(const unsigned int *seatNumber, int rows,
-                            int columns, int groupCols,
+                            int columns, int groupCount,
                             const std::vector<std::shared_ptr<Student>> &studentGroup);
 
 // 计算座位布局（抛异常表示失败）

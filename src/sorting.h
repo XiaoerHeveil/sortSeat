@@ -4,6 +4,9 @@
 #include <string>
 #include <vector>
 
+// 空位哨兵值（UINT_MAX）：学生索引保持 0 基，故不能用 0 表示空位（会与第一个学生冲突）
+inline constexpr unsigned int EMPTY_SEAT = ~0u;
+
 class Student;
 
 // DSL规则结构体
@@ -36,9 +39,12 @@ int
 findStudentByName(const std::string &name,
                   const std::vector<std::shared_ptr<Student>> &studentGroup);
 
+// 总列数 totalColumns 被均分为 groupCount 组，返回第 column 列（0-based）属于第几组（0-based）
+int columnGroup(int column, int groupCount, int totalColumns);
+
 // 执行所有规则
 void executeRules(const std::vector<SeatRule> &rules, unsigned int *seatNumber,
-                  int rows, int columns, int groupCols,
+                  int rows, int columns, int groupCount,
                   std::vector<std::shared_ptr<Student>> &studentGroup,
                   const std::string &filePath, int fileType);
 
@@ -48,7 +54,7 @@ void randomFill(unsigned int *seatNumber, int rows, int columns,
 
 // 伪随机填充剩余空位（约束感知）
 void constrainedFill(unsigned int *seatNumber, int rows, int columns,
-                     int groupCols,
+                     int groupCount,
                      const std::vector<std::shared_ptr<Student>> &studentGroup);
 
 // 打印座位布局

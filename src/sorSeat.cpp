@@ -35,7 +35,7 @@ std::string toUtf8(const char *native) {
 #endif
 }
 
-// 解析结果文本为二维网格（空格=空单元格，逗号=相邻单元格）
+// 解析结果文本为二维网格（逗号=相邻单元格，空格=空单元格）
 std::vector<std::vector<std::string>> parseResultGrid(const std::string &text) {
     std::vector<std::vector<std::string>> grid;
     size_t pos = 0;
@@ -44,32 +44,26 @@ std::vector<std::vector<std::string>> parseResultGrid(const std::string &text) {
         std::string line = (nl == std::string::npos)
                                ? text.substr(pos)
                                : text.substr(pos, nl - pos);
+        if (!line.empty() && line.back() == '\r')
+            line.pop_back();
         pos = (nl == std::string::npos) ? text.size() + 1 : nl + 1;
 
+        // 与前端 ParseResultText 一致：逗号=相邻，空格=空出一个单元格
         std::vector<std::string> row;
-        size_t sp = 0;
-        while (sp <= line.size()) {
-            size_t next = line.find(' ', sp);
-            std::string elem = (next == std::string::npos)
-                                   ? line.substr(sp)
-                                   : line.substr(sp, next - sp);
-            sp = (next == std::string::npos) ? line.size() + 1 : next + 1;
-            if (elem.empty()) {
+        std::string cur;
+        for (char ch : line) {
+            if (ch == ',') {
+                row.push_back(cur);
+                cur.clear();
+            } else if (ch == ' ') {
+                row.push_back(cur);
+                cur.clear();
                 row.push_back("");
-                continue;
-            }
-            size_t cp = 0;
-            while (cp <= elem.size()) {
-                size_t cn = elem.find(',', cp);
-                std::string name = (cn == std::string::npos)
-                                       ? elem.substr(cp)
-                                       : elem.substr(cp, cn - cp);
-                row.push_back(name);
-                if (cn == std::string::npos)
-                    break;
-                cp = cn + 1;
+            } else {
+                cur += ch;
             }
         }
+        row.push_back(cur);
         grid.push_back(std::move(row));
     }
     return grid;
@@ -104,17 +98,17 @@ bool exportLogs(const std::string &destDirUtf8) {
 
 } // namespace
 
-// CLI 测试模式：sortSeat --test <学生文件> <规则文件> <列数> <每组列数>
+// CLI 测试模式：sortSeat --test <学生文件> <规则文件> <列数> <小组组数>
 static int runTestMode(int argc, char **argv) {
     if (argc < 6) {
-        std::cerr << "用法: sortSeat --test <学生文件> <规则文件> <列数> <每组列数>\n";
+        std::cerr << "用法: sortSeat --test <学生文件> <规则文件> <列数> <小组组数>\n";
         return 1;
     }
     seat::SeatRequest req;
     req.studentPath = toUtf8(argv[2]);
     req.rulesPath = toUtf8(argv[3]);
     req.x_row = std::stoi(argv[4]);
-    req.groupRow = std::stoi(argv[5]);
+    req.groupCount = std::stoi(argv[5]);
     try {
         auto r = seat::compute(req);
         printSeatLayout(r.grid.data(), r.rows, r.columns, r.students);
@@ -173,7 +167,7 @@ int main(int argc, char *argv[]) {
                         throw std::runtime_error("START 参数不足");
                     seat::SeatRequest req;
                     req.x_row = std::stoi(fields[0]);
-                    req.groupRow = std::stoi(fields[1]);
+                    req.groupCount = std::stoi(fields[1]);
                     req.studentPath = fields[2];
                     req.rulesPath = fields[3];
                     lastResultPath = seat::computeToTempFile(req);
@@ -223,7 +217,7 @@ int main(int argc, char *argv[]) {
 
                     std::filesystem::path outPath = dest / L"seat_result.xlsx";
                     OpenXLSX::XLDocument doc;
-                    doc.create(outPath.string());
+                    doc.create(pathToUtf8(outPath));
                     auto ws = doc.workbook().worksheet("Sheet1");
                     for (size_t r = 0; r < grid.size(); ++r)
                         for (size_t c = 0; c < grid[r].size(); ++c)

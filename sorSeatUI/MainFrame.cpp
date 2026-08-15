@@ -426,6 +426,27 @@ MainFrame::MainFrame(const wxString &title)
 			wxFileName fn(m_rulesFilePath);
 			RulesFileText->SetLabel(L"已选择文件: " + fn.GetFullName());
 		} });
+	ClearData->Bind(wxEVT_BUTTON, [=](wxCommandEvent &)
+					{
+		bool hasFile = !m_rulesFilePath.IsEmpty();
+		bool hasRules = !RulesInput->GetValue().IsEmpty();
+
+		// 选择文件时立即清除路径（不删除文件，仅清除选择结果）
+		if (hasFile)
+		{
+			m_rulesFilePath = wxEmptyString;
+			RulesFileText->SetLabel(L"未选择文件");
+		}
+
+		// 输入框有规则时询问是否清除
+		if (hasRules)
+		{
+			int answer = wxMessageBox(L"是否清除所有规则？", L"确认清除",
+									  wxYES_NO | wxICON_QUESTION, this);
+			if (answer == wxYES)
+				RulesInput->Clear();
+		}
+	});
 	wxStaticText *RulesText = new wxStaticText(Rules_TextPanel, wxID_ANY, L"输入排座规则（留空随机排序）：");
 	wxFont RulesFont = RulesText->GetFont();
 	RulesFont.SetPointSize(18);
@@ -844,10 +865,10 @@ void MainFrame::OnStartClicked(wxCommandEvent &evt)
 	}
 
 	int x_row = columnsNum->GetValue();
-	int groupRow = groupNum->GetValue();
+	int groupCount = groupNum->GetValue();
 	ipc::Message msg;
 	msg.op = ipc::Op::START;
-	msg.payload = ipc::packFields({std::to_string(x_row), std::to_string(groupRow),
+	msg.payload = ipc::packFields({std::to_string(x_row), std::to_string(groupCount),
 								   studentPath, rulesPath});
 	if (!backend.send(msg))
 	{
@@ -1066,32 +1087,36 @@ void MainFrame::ParseResultText(const wxString &text)
 	if (text.IsEmpty())
 		return;
 
-	// 换行分割
+	// 换行分割（后端生成 \r\n，去掉行尾 \r）
 	wxStringTokenizer lineTok(text, "\n", wxTOKEN_RET_EMPTY_ALL);
 	while (lineTok.HasMoreTokens())
 	{
 		wxString line = lineTok.GetNextToken();
-		// 按空格分割，得到元素（可能包含逗号分隔的多个姓名）
-		wxArrayString elements = wxSplit(line, ' ', '\0');
+		if (!line.empty() && line.Last() == wxT('\r'))
+			line.RemoveLast();
+		// 逗号 = 与上一格相邻；空格 = 与上一格之间空出一个单元格
 		std::vector<wxString> row;
-		for (size_t i = 0; i < elements.size(); ++i)
+		wxString cur;
+		for (size_t i = 0; i < line.size(); ++i)
 		{
-			wxString elem = elements[i];
-			if (elem.empty())
+			wxUniChar ch = line[i];
+			if (ch == ',')
 			{
-				// 连续空格：保留一个空位（可根据需求调整）
+				row.push_back(cur);
+				cur.clear();
+			}
+			else if (ch == ' ')
+			{
+				row.push_back(cur);
+				cur.clear();
 				row.push_back(wxEmptyString);
 			}
 			else
 			{
-				// 按逗号拆分，逗号表示连续绘制，不追加额外空格
-				wxArrayString names = wxSplit(elem, ',', '\0');
-				for (size_t j = 0; j < names.size(); ++j)
-				{
-					row.push_back(names[j]);
-				}
+				cur += ch;
 			}
 		}
+		row.push_back(cur);
 		m_resultRows.push_back(row);
 	}
 }

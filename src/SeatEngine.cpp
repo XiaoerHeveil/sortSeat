@@ -43,7 +43,7 @@ std::vector<std::shared_ptr<Student>> loadTxt(const std::string &path) {
         std::string name = t;
         std::string sex = "男";
         size_t half = t.find(':');
-        size_t full = t.find("："); // 全角冒号（3字节，不能按单字节查找）
+        size_t full = t.find("：");
         size_t pos = std::string::npos;
         if (half != std::string::npos && full != std::string::npos)
             pos = std::min(half, full);
@@ -108,7 +108,8 @@ std::vector<std::shared_ptr<Student>> loadCsv(const std::string &path) {
 
 std::vector<std::shared_ptr<Student>> loadXlsx(const std::string &path) {
     OpenXLSX::XLDocument xlsx;
-    xlsx.open(std::filesystem::u8path(path).string());
+    // path 已是 UTF-8，OpenXLSX 内部用 nowide::fopen 期望 UTF-8，直接传入即可
+    xlsx.open(path);
     auto ws = xlsx.workbook().worksheet("Sheet1");
     std::vector<std::shared_ptr<Student>> out;
     int idx = 1;
@@ -162,23 +163,46 @@ std::vector<std::string> loadRuleLines(const std::string &path) {
 }
 
 std::string buildResultText(
-    const unsigned int *seatNumber, int rows, int columns, int groupCols,
+    const unsigned int *seatNumber, int rows, int columns, int groupCount,
     const std::vector<std::shared_ptr<Student>> &studentGroup) {
-    if (groupCols <= 0)
-        groupCols = 1;
+    // 参数约定：rows = 总列数(x_row)，columns = 总行数(y_column)
+    // 网格为列主序存储：seatNumber[列 * columns + 行]
     std::string out;
-    for (int r = 0; r < rows; ++r) {
+    for (int r = 0; r < columns; ++r) {   // r = 行
         if (r > 0)
-            out += '\n';
-        for (int c = 0; c < columns; ++c) {
+            out += "\r\n";
+        auto occupied = [&](int c) {
+            if (c < 0 || c >= rows) return false;
+            unsigned int v = seatNumber[c * columns + r];
+            return v != EMPTY_SEAT && v != 255 &&
+                   v < static_cast<unsigned int>(studentGroup.size());
+        };
+        for (int c = 0; c < rows; ++c) {  // c = 列
             if (c > 0) {
-                bool sameGroup = (c / groupCols) == ((c - 1) / groupCols);
+                bool sameGroup =
+                    columnGroup(c, groupCount, rows) ==
+                    columnGroup(c - 1, groupCount, rows);
                 out += sameGroup ? ',' : ' ';
             }
-            unsigned int val = seatNumber[r * columns + c];
-            if (val != 0 && val != 255 &&
-                val < static_cast<unsigned int>(studentGroup.size()))
+            unsigned int val = seatNumber[c * columns + r];
+            if (occupied(c)) {
                 out += studentGroup[val]->getName();
+            } else if (val == EMPTY_SEAT) {
+                // 空座位：与同组相邻座位（同桌）相邻时，标注「（空座位）」
+                bool near = false;
+                if (c > 0 &&
+                    columnGroup(c, groupCount, rows) ==
+                        columnGroup(c - 1, groupCount, rows) &&
+                    occupied(c - 1))
+                    near = true;
+                if (!near && c + 1 < rows &&
+                    columnGroup(c, groupCount, rows) ==
+                        columnGroup(c + 1, groupCount, rows) &&
+                    occupied(c + 1))
+                    near = true;
+                if (near)
+                    out += "（空座位）";
+            }
         }
     }
     return out;
@@ -186,11 +210,11 @@ std::string buildResultText(
 
 SeatResult compute(const SeatRequest &req) {
     int x_row = req.x_row;
-    int groupRow = req.groupRow;
+    int groupCount = req.groupCount;
     if (x_row <= 0)
         throw std::runtime_error("座位列数必须为正整数");
-    if (groupRow <= 0)
-        throw std::runtime_error("每组列数必须为正整数");
+    if (groupCount <= 0)
+        throw std::runtime_error("小组组数必须为正整数");
 
     int fileType = fileExtension(req.studentPath);
     if (fileType == 3)
@@ -201,19 +225,19 @@ SeatResult compute(const SeatRequest &req) {
         throw std::runtime_error("学生名单为空");
 
     int peopleNumber = static_cast<int>(students.size());
-    int y_column = peopleNumber / x_row + 1;
+    int y_column = (peopleNumber + x_row - 1) / x_row;
     if (y_column < 1)
         y_column = 1;
 
-    std::vector<unsigned int> grid(static_cast<size_t>(x_row) * y_column, 0);
+    std::vector<unsigned int> grid(static_cast<size_t>(x_row) * y_column, EMPTY_SEAT);
 
     auto ruleLines = loadRuleLines(req.rulesPath);
     if (!ruleLines.empty()) {
         sortFunctionsByPriority(ruleLines);
         auto rules = parseRuleLines(ruleLines);
-        executeRules(rules, grid.data(), x_row, y_column, groupRow, students,
+        executeRules(rules, grid.data(), x_row, y_column, groupCount, students,
                      req.studentPath, fileType);
-        constrainedFill(grid.data(), x_row, y_column, groupRow, students);
+        constrainedFill(grid.data(), x_row, y_column, groupCount, students);
     } else {
         randomFill(grid.data(), x_row, y_column, students);
     }
@@ -223,8 +247,8 @@ SeatResult compute(const SeatRequest &req) {
     r.grid = std::move(grid);
     r.rows = x_row;
     r.columns = y_column;
-    r.groupCols = groupRow;
-    r.text = buildResultText(r.grid.data(), x_row, y_column, groupRow, students);
+    r.groupCount = groupCount;
+    r.text = buildResultText(r.grid.data(), x_row, y_column, groupCount, students);
     return r;
 }
 
