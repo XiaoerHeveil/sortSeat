@@ -14,7 +14,7 @@
 ## 技术栈
 
 - **语言/标准**：C++20
-- **构建系统**：CMake（≥3.15）+ vcpkg（工具链 `D:/Code/Cpp/project/vcpkg`）
+- **构建系统**：CMake（≥3.15）+ vcpkg
 - **GUI**：wxWidgets（MSW）
 - **Excel**：OpenXLSX
 - **日志**：spdlog（异步日志器）
@@ -55,7 +55,7 @@ sortSeat/
 
 前置条件：
 
-- 已安装 [vcpkg](https://github.com/microsoft/vcpkg)（本仓库默认工具链路径为 `D:/Code/Cpp/project/vcpkg`）。
+- 已安装 [vcpkg](https://github.com/microsoft/vcpkg)。
 - 已通过 vcpkg 安装 `wxWidgets`、`OpenXLSX`、`spdlog`（x64-windows）。
 
 ```bash
@@ -74,40 +74,6 @@ cmake --build build --config Release
 - `build/Debug/sortSeat.exe` / `build/Release/sortSeat.exe`（后端）
 - `build/Debug/sorSeatUI.exe` / `build/Release/sorSeatUI.exe`（前端 GUI）
 - 资源文件自动复制到可执行文件旁的 `resource/` 目录。
-
-## 打包（CPack）
-
-生成 NSIS 安装包：
-
-```bash
-cmake --build build --config Release --target package
-```
-
-产物（main 分支）为 `build/sortSeatInstaller.exe`（win7-gbk 分支为 `sortSeatInstaller_Win7.exe`）。安装包会包含两个 exe、全部运行时 DLL、`resource/`，并在安装前强制展示 EULA（不同意无法安装），安装后在安装目录生成 `Licence/` 文件夹供查看细分协议。
-
-### NSIS 环境变量
-
-CPack 的 NSIS 生成器需要 `makensis.exe`。若 **已加入 PATH**，直接执行上面的打包命令即可。
-
-若 **未加入 PATH**（默认安装于 `D:/Program Files (x86)/NSIS/`），打包前临时把 NSIS 加入 PATH：
-
-```bash
-# 当前会话临时加入 PATH
-export PATH="/d/Program Files (x86)/NSIS:$PATH"
-
-# 然后打包
-cmake --build build --config Release --target package
-```
-
-### 修改版本号
-
-版本号在 [CMakeLists.txt](CMakeLists.txt) 的打包配置区，改动这一处即可（安装包文件名不含版本号，无需另行修改）：
-
-```cmake
-set(CPACK_PACKAGE_VERSION "0.1.5")
-```
-
-> 界面内显示的「早期开发版: Alpha 0.1.5」在 [sorSeatUI/MainFrame.cpp](sorSeatUI/MainFrame.cpp) 中，需同步修改以保持一致。
 
 ## 快速开始
 
