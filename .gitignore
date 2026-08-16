@@ -9,3 +9,5 @@ vcpkg_installed/
 .claude/
 resources/
 redist/
+License/
+Licence.txt
