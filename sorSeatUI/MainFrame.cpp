@@ -753,7 +753,7 @@ MainFrame::MainFrame(const wxString &title)
 	githubRepositoryFont.SetPointSize(16);
 	githubRepositoryText->SetFont(githubRepositoryFont);
 	// 超链接（目前为空）
-	wxHyperlinkCtrl *githubRepositoryURL = new wxHyperlinkCtrl(projectAddressPanel, wxID_ANY, wxEmptyString, wxEmptyString);
+	wxHyperlinkCtrl *githubRepositoryURL = new wxHyperlinkCtrl(projectAddressPanel, wxID_ANY, "@github仓库", "https://github.com/XiaoerHeveil/sortSeat");
 	// 添加布局
 	projectAddressSizer->Add(githubRepositoryText, 0, wxEXPAND | wxALL, 10);
 	projectAddressSizer->Add(githubRepositoryURL, 0, wxEXPAND | wxLEFT | wxTOP, 20);

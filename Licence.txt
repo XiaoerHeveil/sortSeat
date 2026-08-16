@@ -1,0 +1,43 @@
+﻿GNU LESSER GENERAL PUBLIC LICENSE
+Version 3, 29 June 2007
+
+Copyright (C) 2026 Xiaoer Heveil
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 3 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this library. If not, see <https://www.gnu.org/licenses/>.
+
+版权所有（c）[2026] 小冰棍
+
+本软件采用 LGPL-3.0 协议开源。
+你可以自由地重新分发和/或修改本软件，但需遵守 GNU Lesser General Public License v3.0 的条款。
+
+本软件按“原样”提供，不提供任何明示或暗示的担保。
+有关完整的协议文本，请参阅随附的 LGPL-3.0 协议文件。
+
+-------------------------------------------------------------------------
+【第三方开源组件声明 (Third-Party Notices)】
+-------------------------------------------------------------------------
+本软件在开发和分发过程中使用了以下第三方开源库。我们非常感谢这些开源项目的贡献：
+
+. wxWidgets (LGPL)
+   本项目使用了 wxWidgets 图形界面库。根据 wxWidgets 的许可协议，
+   基于其开发的二进制衍生作品可以按照用户自己的条款进行分发。
+   完整的 wxWidgets 许可证文本请查阅：License/wxWidgets_License.txt
+
+. OpenXLSX (BSD-3-Clause)
+   本项目使用了 OpenXLSX 库。根据 BSD-3-Clause 协议，仅要求保留版权声明。
+   完整的 BSD-3-Clause 许可证文本请查阅：License/OpenXLSX_License.md
+
+. spdlog (MIT)
+   本项目使用了 spdlog 日志库。根据 MIT 协议，仅要求保留版权声明。
+   完整的 MIT 许可证文本请查阅：License/spdlog_License.txt

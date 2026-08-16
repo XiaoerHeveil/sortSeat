@@ -1,4 +1,7 @@
-set(CMAKE_TOOLCHAIN_FILE "D:/Code/Cpp/project/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+# 优先使用环境变量 VCPKG_ROOT 定位 vcpkg 工具链，避免硬编码绝对路径
+if(DEFINED ENV{VCPKG_ROOT})
+    set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+endif()
 
 cmake_minimum_required(VERSION 3.21)
 project(sortSeat LANGUAGES CXX)
@@ -95,7 +98,7 @@ install(CODE "
 install(DIRECTORY sorSeatUI/resource/ DESTINATION resource)
 
 # 协议：安装后复制到安装目录 Licence 文件夹，供用户查看细分协议
-install(DIRECTORY docs/License/ DESTINATION Licence)
+install(DIRECTORY License/ DESTINATION Licence)
 
 set(CPACK_PACKAGE_NAME "sortSeat")
 set(CPACK_PACKAGE_VERSION "0.1.5")
@@ -114,5 +117,5 @@ set(CPACK_NSIS_CREATE_ICONS_EXTRA
 set(CPACK_NSIS_DELETE_ICONS_EXTRA
     "Delete \\\"$DESKTOP\\\\排个座.lnk\\\"")
 # EULA：安装前强制展示，不同意无法继续（UTF-8 BOM 编码）
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/docs/License/Licence.txt")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/Licence.txt")
 include(CPack)
