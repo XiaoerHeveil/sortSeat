@@ -1,5 +1,6 @@
 #include "SeatEngine.h"
 
+#include "Validate.h"
 #include "fileInput.h"
 #include "sorting.h"
 #include "student.h"
@@ -11,6 +12,7 @@
 #include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 
 namespace seat {
@@ -45,15 +47,25 @@ std::vector<std::shared_ptr<Student>> loadTxt(const std::string &path) {
         size_t half = t.find(':');
         size_t full = t.find("：");
         size_t pos = std::string::npos;
-        if (half != std::string::npos && full != std::string::npos)
-            pos = std::min(half, full);
-        else if (half != std::string::npos)
+        size_t colonLen = 1; // ':' 1 字节，'：' 3 字节（UTF-8）
+        if (half != std::string::npos && full != std::string::npos) {
+            if (half < full) {
+                pos = half;
+                colonLen = 1;
+            } else {
+                pos = full;
+                colonLen = 3;
+            }
+        } else if (half != std::string::npos) {
             pos = half;
-        else
+            colonLen = 1;
+        } else {
             pos = full;
+            colonLen = 3;
+        }
         if (pos != std::string::npos) {
             name = trimCopy(t.substr(0, pos));
-            sex = trimCopy(t.substr(pos + 1));
+            sex = trimCopy(t.substr(pos + colonLen));
             if (sex.empty())
                 sex = "男";
         }
@@ -150,8 +162,18 @@ std::vector<std::string> loadRuleLines(const std::string &path) {
     std::ifstream in(std::filesystem::u8path(path));
     if (!in)
         return lines;
+    std::string content((std::istreambuf_iterator<char>(in)),
+                        std::istreambuf_iterator<char>());
+    // 去掉 UTF-8 BOM（导入的规则文件可能带 BOM，否则首行函数名解析失败）
+    if (content.size() >= 3 && (unsigned char)content[0] == 0xEF &&
+        (unsigned char)content[1] == 0xBB && (unsigned char)content[2] == 0xBF)
+        content.erase(0, 3);
+    // 统一在读取阶段规范化（全角/半角符号、分号拆行），
+    // 使导入文件、文本输入临时文件、CLI --test 三条路径行为一致。
+    std::string normalized = validate::normalizeRulesInput(content);
+    std::istringstream ss(normalized);
     std::string line;
-    while (std::getline(in, line)) {
+    while (std::getline(ss, line)) {
         if (!line.empty() && line.back() == '\r')
             line.pop_back();
         auto first = std::find_if(line.begin(), line.end(),
@@ -231,12 +253,13 @@ SeatResult compute(const SeatRequest &req) {
 
     std::vector<unsigned int> grid(static_cast<size_t>(x_row) * y_column, EMPTY_SEAT);
 
+    std::string warning;
     auto ruleLines = loadRuleLines(req.rulesPath);
     if (!ruleLines.empty()) {
         sortFunctionsByPriority(ruleLines);
         auto rules = parseRuleLines(ruleLines);
-        executeRules(rules, grid.data(), x_row, y_column, groupCount, students,
-                     req.studentPath, fileType);
+        warning = executeRules(rules, grid.data(), x_row, y_column, groupCount,
+                               students, req.studentPath, fileType);
         constrainedFill(grid.data(), x_row, y_column, groupCount, students);
     } else {
         randomFill(grid.data(), x_row, y_column, students);
@@ -249,6 +272,7 @@ SeatResult compute(const SeatRequest &req) {
     r.columns = y_column;
     r.groupCount = groupCount;
     r.text = buildResultText(r.grid.data(), x_row, y_column, groupCount, students);
+    r.warning = std::move(warning);
     return r;
 }
 

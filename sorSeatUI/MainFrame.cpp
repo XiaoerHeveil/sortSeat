@@ -894,7 +894,22 @@ void MainFrame::OnStartClicked(wxCommandEvent &evt)
 		return;
 	}
 
-	std::string text = ReadFileUtf8(resp.payload);
+	auto fields = ipc::unpackFields(resp.payload);
+	if (fields.empty())
+	{
+		wxMessageBox(L"响应数据异常", L"错误", wxOK | wxICON_ERROR);
+		return;
+	}
+	std::string resultPath = fields[0];
+	std::string warning = fields.size() > 1 ? fields[1] : std::string();
+	if (!warning.empty())
+	{
+		wxMessageBox(
+			wxString::FromUTF8("你的部分规则需要使用更加详细的单元格数据，但是你使用的却是文本文件，为了能够正常运行，已关闭\n" + warning),
+			L"提示", wxOK | wxICON_INFORMATION);
+	}
+
+	std::string text = ReadFileUtf8(resultPath);
 	ParseResultText(wxString::FromUTF8(text));
 
 	sortResult = true;

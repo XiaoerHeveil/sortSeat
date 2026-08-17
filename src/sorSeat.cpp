@@ -8,6 +8,7 @@
 
 #include <OpenXLSX/OpenXLSX.hpp>
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -111,6 +112,8 @@ static int runTestMode(int argc, char **argv) {
     req.groupCount = std::stoi(argv[5]);
     try {
         auto r = seat::compute(req);
+        if (!r.warning.empty())
+            std::cerr << "[warning] " << r.warning << "\n";
         printSeatLayout(r.grid.data(), r.rows, r.columns, r.students);
         std::cout << "\n===== 结果文本（Result Text） =====\n"
                   << r.text << "\n";
@@ -170,9 +173,23 @@ int main(int argc, char *argv[]) {
                     req.groupCount = std::stoi(fields[1]);
                     req.studentPath = fields[2];
                     req.rulesPath = fields[3];
-                    lastResultPath = seat::computeToTempFile(req);
+                    auto r = seat::compute(req);
+                    std::filesystem::path dir =
+                        std::filesystem::temp_directory_path();
+                    auto ts = std::chrono::steady_clock::now()
+                                  .time_since_epoch()
+                                  .count();
+                    std::filesystem::path file =
+                        dir / ("sortSeat_result_" + std::to_string(ts) + ".txt");
+                    std::ofstream out(file, std::ios::binary);
+                    if (!out)
+                        throw std::runtime_error("无法写入结果文件");
+                    out << r.text;
+                    out.close();
+                    lastResultPath =
+                        ipc::pathToUtf8(std::filesystem::absolute(file));
                     reply.op = Op::RESULT;
-                    reply.payload = lastResultPath;
+                    reply.payload = ipc::packFields({lastResultPath, r.warning});
                     SORLOG_INFO("排序完成，结果文件: {}", lastResultPath);
                 } catch (const std::exception &e) {
                     SORLOG_ERROR("START 处理失败: {}", e.what());

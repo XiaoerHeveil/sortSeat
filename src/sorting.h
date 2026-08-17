@@ -42,11 +42,12 @@ findStudentByName(const std::string &name,
 // 总列数 totalColumns 被均分为 groupCount 组，返回第 column 列（0-based）属于第几组（0-based）
 int columnGroup(int column, int groupCount, int totalColumns);
 
-// 执行所有规则
-void executeRules(const std::vector<SeatRule> &rules, unsigned int *seatNumber,
-                  int rows, int columns, int groupCount,
-                  std::vector<std::shared_ptr<Student>> &studentGroup,
-                  const std::string &filePath, int fileType);
+// 执行所有规则，返回文本文件下被关闭的单元格数据规则提示（空 = 无）
+std::string
+executeRules(const std::vector<SeatRule> &rules, unsigned int *seatNumber,
+             int rows, int columns, int groupCount,
+             std::vector<std::shared_ptr<Student>> &studentGroup,
+             const std::string &filePath, int fileType);
 
 // 真随机填充剩余空位
 void randomFill(unsigned int *seatNumber, int rows, int columns,

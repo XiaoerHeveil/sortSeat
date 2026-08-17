@@ -23,6 +23,7 @@ struct SeatResult {
     int columns = 0;                // 第二维（= 行数）
     int groupCount = 0;
     std::string text; // 结果文本（testText 格式）
+    std::string warning; // 文本文件下被关闭的单元格数据规则提示（空 = 无）
 };
 
 // 读取学生名单（fileType: 0=TXT 1=CSV 2=XLSX，未知按 TXT）
