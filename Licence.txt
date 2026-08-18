@@ -25,6 +25,24 @@ along with this library. If not, see <https://www.gnu.org/licenses/>.
 有关完整的协议文本，请参阅随附的 LGPL-3.0 协议文件。
 
 -------------------------------------------------------------------------
+[Third Party Notices]
+-------------------------------------------------------------------------
+The following third-party open source libraries are used in the development and distribution of this software. We are very grateful for the contributions of these open source projects:
+
+. wxWidgets (LGPL)
+This project uses the wxWidgets graphical interface library. According to the license agreement of wxWidgets,
+Binary derivative works developed based on it can be distributed according to the user's own terms.
+For the complete license text of wxWidgets, please refer to: License/wxWidgets_License.txt
+
+. OpenXLSX (BSD-3-Clause)
+This project uses the OpenXLSX library. According to the BSD-3-Clause agreement, only the copyright notice is required to be retained.
+For the complete BSD-3-Clause license text, please refer to: License/OpenXLSX_License.md
+
+. spdlog (MIT)
+This project uses the spdlog log library. According to the MIT agreement, only the copyright notice is required to be retained.
+For the complete MIT license text, please refer to: License/spdlog_License.txt
+   
+-------------------------------------------------------------------------
 【第三方开源组件声明 (Third-Party Notices)】
 -------------------------------------------------------------------------
 本软件在开发和分发过程中使用了以下第三方开源库。我们非常感谢这些开源项目的贡献：
