@@ -728,7 +728,7 @@ MainFrame::MainFrame(const wxString &title)
 	// 声明版本号和开源协议
 	wxPanel *VersionOrAgreementPanel = new wxPanel(InforPanel, wxID_ANY);
 	wxBoxSizer *VersionOrAgreementSizer = new wxBoxSizer(wxHORIZONTAL);
-	wxStaticText *VersionNumber = new wxStaticText(VersionOrAgreementPanel, wxID_ANY, L"早期开发版: Alpha 0.1.5");
+	wxStaticText *VersionNumber = new wxStaticText(VersionOrAgreementPanel, wxID_ANY, L"早期开发版: Alpha 0.1.6");
 	wxFont VersionFont = VersionNumber->GetFont();
 	VersionFont.SetPointSize(12);
 	VersionNumber->SetFont(VersionFont);
@@ -768,7 +768,7 @@ MainFrame::MainFrame(const wxString &title)
 	wxFont authorFont = authorText->GetFont();
 	authorFont.SetPointSize(16);
 	authorText->SetFont(authorFont);
-	wxHyperlinkCtrl *authorURL = new wxHyperlinkCtrl(authorPanel, wxID_ANY, "XiaoBingGun", "http://127.0.0.1:8080");
+	wxHyperlinkCtrl *authorURL = new wxHyperlinkCtrl(authorPanel, wxID_ANY, "XiaoBingGun", "https://space.bilibili.com/3546383262943960?spm_id_from=333.40164.0.0");
 	// 添加布局
 	authorSizer->Add(authorText, 0, wxEXPAND | wxALL, 10);
 	authorSizer->Add(authorURL, 0, wxEXPAND | wxLEFT | wxTOP, 20);
