@@ -7,14 +7,17 @@
 class SequenceButton : public wxStaticBitmap
 {
 public:
-    SequenceButton(wxWindow *parent, const std::vector<wxBitmap> &frames);
+    SequenceButton(wxWindow *parent, const std::vector<wxBitmap> &frames,
+                   bool initiallyPressed = false);
     virtual ~SequenceButton();
+    bool GetState();
 
 private:
     std::vector<wxBitmap> m_frames;
     int m_currentFrame;
     bool m_isPlayingForward;
     bool m_isPlayingBackward;
+    bool isPress = false;
     wxTimer *m_timer;
     static constexpr int FRAME_DELAY = 50;
 

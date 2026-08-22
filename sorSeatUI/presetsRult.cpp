@@ -52,7 +52,7 @@ void addSetSeatPanel::SetEditable(bool editable)
 addSetSeatPanel *addSetSeatPanel::Clone(wxWindow *newParent) const
 {
     addSetSeatPanel *clone = new addSetSeatPanel(newParent, wxID_ANY,
-                                     wxDefaultPosition, this->GetSize());
+                                                 wxDefaultPosition, this->GetSize());
 
     clone->Name->SetValue(this->Name->GetValue());
     clone->Row->SetValue(this->Row->GetValue());

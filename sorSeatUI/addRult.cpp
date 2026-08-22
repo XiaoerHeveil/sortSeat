@@ -1,10 +1,14 @@
 #include "addRult.h"
 #include "presetsRult.h"
+#include "mappingRult.h"
+#include "MainFrame.h"
 #include <wx/spinctrl.h>
 
 addRult::addRult(wxWindow *parent)
     : wxFrame(parent, wxID_ANY, L"添加规则", wxDefaultPosition, wxSize(600, 800))
 {
+    m_mainFrame = dynamic_cast<MainFrame *>(parent);
+
     // 设置窗口背景颜色
     SetBackgroundColour(wxColour(210, 210, 210));
 
@@ -29,9 +33,23 @@ addRult::addRult(wxWindow *parent)
     definitionRultPanel->SetSizer(m_definitionSizer);
     definitionRultPanel->SetScrollRate(5, 5);
 
-    // 将这两个面板添加到基层面板
+    ButtonPanel = new wxPanel(basicLevelPanel, wxID_ANY, wxDefaultPosition, wxSize(-1, 80));
+    wxBoxSizer *ButtonSizer = new wxBoxSizer(wxHORIZONTAL);
+    wxButton *ConfirmBtn = new wxButton(ButtonPanel, wxID_ANY, L"确认", wxDefaultPosition, wxSize(100, 60));
+    ConfirmBtn->SetBackgroundColour(wxColour(235, 226, 11)); // #EBE20B
+    ConfirmBtn->Bind(wxEVT_BUTTON, &addRult::OnConfirm, this);
+    wxButton *ClearRultBtn = new wxButton(ButtonPanel, wxID_ANY, L"清除", wxDefaultPosition, wxSize(100, 60));
+    ClearRultBtn->SetBackgroundColour(wxColour(94, 94, 94)); // #5E5E5E
+    // 添加按钮到布局
+    ButtonSizer->AddStretchSpacer();
+    ButtonSizer->Add(ConfirmBtn, 0, wxEXPAND | wxALL, 10);
+    ButtonSizer->Add(ClearRultBtn, 0, wxEXPAND | wxALL, 10);
+    ButtonPanel->SetSizer(ButtonSizer);
+
+    // 将这三个面板添加到基层面板
     basicLevelSizer->Add(presetsRultPanel, 1, wxEXPAND);
     basicLevelSizer->Add(definitionRultPanel, 3, wxEXPAND);
+    basicLevelSizer->Add(ButtonPanel, 0, wxEXPAND);
     basicLevelPanel->SetSizer(basicLevelSizer);
 
     // 根布局：让基层面板铺满整个窗口
@@ -46,8 +64,26 @@ addRult::addRult(wxWindow *parent)
     m_presetTemplate->Bind(wxEVT_MOUSE_CAPTURE_LOST, &addRult::OnMouseLost, this);
 }
 
-void addRult::addSetSeat(const wxString &name, const int &row, const int &col)
+wxString addRult::addSetSeat(const wxString &name, const int &row, const int &col)
 {
+    return "";
+}
+
+void addRult::OnConfirm(wxCommandEvent &evt)
+{
+    // 收集定义面板中所有已拖入的 addSetSeatPanel，生成 DSL 文本并回传
+    std::vector<addSetSeatPanel *> panels;
+    for (wxWindow *w : definitionRultPanel->GetChildren())
+    {
+        if (auto *p = dynamic_cast<addSetSeatPanel *>(w))
+            panels.push_back(p);
+    }
+
+    wxString rulesText = mappingRult::BuildRulesText(panels);
+    if (m_mainFrame)
+        m_mainFrame->ApplyVisualRules(rulesText);
+
+    Close();
 }
 
 void addRult::DestroyDragClone()

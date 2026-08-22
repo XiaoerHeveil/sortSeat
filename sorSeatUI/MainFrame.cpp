@@ -1,9 +1,9 @@
 #include "MainFrame.h"
 #include "SeatPanel.h"
-#include "SequenceButton.h"
 #include "IpcClient.h"
 #include "Validate.h"
 #include "addRult.h"
+#include "mappingRult.h"
 #include <wx/dcmemory.h>
 #include <wx/spinctrl.h>
 #include <wx/filename.h>
@@ -399,9 +399,19 @@ MainFrame::MainFrame(const wxString &title)
 	wxPanel *Rules_TextPanel = new wxPanel(Home_RulesPanel, wxID_ANY);
 	// 创建标题栏布局
 	wxBoxSizer *Rules_TextSizer = new wxBoxSizer(wxHORIZONTAL);
-	// 文本-按钮-按钮
+	// 文本-按钮(默认隐藏)-按钮-按钮
+	AddRultButton = new wxButton(Rules_TextPanel, wxID_ANY, L" + 添加规则", 
+		wxDefaultPosition, wxSize(100, 60));
+	AddRultButton->SetBackgroundColour(wxColour(28, 208, 35)); // #1CD123
+	AddRultButton->Bind(wxEVT_BUTTON, [this](wxCommandEvent &)
+						{
+		addRult *dlg = new addRult(this);
+		dlg->SetSize(600, 720);
+		dlg->Center();
+		dlg->Show(); });
 	wxButton *ClearData = new wxButton(Rules_TextPanel, wxID_ANY, L"清除",
 									   wxDefaultPosition, wxSize(100, 60));
+	ClearData->SetBackgroundColour(wxColour(170, 170, 170));	// #AAAAAA
 	wxStaticText *RulesFileText = new wxStaticText(Rules_TextPanel, wxID_ANY, L"未选择文件");
 	wxFont RluseFileFont = RulesFileText->GetFont();
 	RluseFileFont.SetPointSize(18);
@@ -457,10 +467,13 @@ MainFrame::MainFrame(const wxString &title)
 	Rules_TextSizer->Add(RulesText, 0, wxALIGN_CENTER_VERTICAL);
 	Rules_TextSizer->AddStretchSpacer(2);
 	Rules_TextSizer->Add(RulesFileText, 1, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 5);
-	Rules_TextSizer->AddStretchSpacer(1);
+	Rules_TextSizer->AddSpacer(60);
+	Rules_TextSizer->Add(AddRultButton, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 5);
 	Rules_TextSizer->Add(ClearData, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 5);
 	Rules_TextSizer->Add(FileImportBtn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT | wxRIGHT, 5);
 	Rules_TextPanel->SetSizer(Rules_TextSizer);
+
+	AddRultButton->Show(false);	// 默认隐藏
 
 	// 创建文本输入框
 	wxPanel *Rules_InputPanel = new wxPanel(Home_RulesPanel, wxID_ANY);
@@ -573,6 +586,8 @@ MainFrame::MainFrame(const wxString &title)
 	wxString testText = L"张1,张2 张3,张4 张5,张6 张7,张8\n李1,李2 李3,李4 李5,李6 李7,李8\n王1,王2 王3,王4 王5,王6 王7,王8";
 	ParseResultText(testText);
 
+
+
 	// SetUp界面
 	// 创建主布局
 	wxBoxSizer *SetUpSizer = new wxBoxSizer(wxVERTICAL);
@@ -683,6 +698,46 @@ MainFrame::MainFrame(const wxString &title)
 	AdvancedSettingSizer->Add(dividingLine2, 1, wxEXPAND);
 	AdvancedSettingPanel->SetSizer(AdvancedSettingSizer);
 
+	// 显示可视化规则输入（实验性）
+	visualizationRultPanel = new wxPanel(SetUpPanel, wxID_ANY);
+	visualizationRultPanel->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, 1.5f));
+	themeColourPanels.push_back({visualizationRultPanel, 1.5f});
+	wxBoxSizer *visualizationRultSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxStaticText *visualizationRultText = new wxStaticText(visualizationRultPanel, wxID_ANY, L"显示可视化规则编辑面板（实验性）");
+	wxFont visualizationRultTextFont = visualizationRultText->GetFont();
+	visualizationRultTextFont.SetPointSize(21);
+	visualizationRultText->SetFont(visualizationRultTextFont);
+	// 这里的按钮动画是和设置深色模式的按钮动画相同
+	openAddRultBtn = new SequenceButton(visualizationRultPanel, frames);
+	openAddRultBtn->Bind(wxEVT_BUTTON, &MainFrame::OnSetvisualizationRultClicked, this);
+	visualizationRultSizer->Add(visualizationRultText, 0, wxEXPAND | wxALL, 10);
+	visualizationRultSizer->AddStretchSpacer();
+	visualizationRultSizer->Add(openAddRultBtn, 0, wxEXPAND | wxALL, 10);
+	visualizationRultPanel->SetSizer(visualizationRultSizer);
+
+	// 显示规则同步行为
+	// synchronizationBehavior = false：所编辑的规则只会静默传给后端 | true：所编辑的规则会先同步到RulesText再传给后端（默认）
+	synchronizationBehaviorPanel = new wxPanel(SetUpPanel, wxID_ANY);
+	synchronizationBehaviorPanel->SetBackgroundColour(wxColour(AdjustBrightnessByPercent(themeColour, 1.8f)));
+	themeColourPanels.push_back({synchronizationBehaviorPanel, 1.8f});
+	wxBoxSizer *synchronizationBehaviorSizer = new wxBoxSizer(wxHORIZONTAL);
+	wxStaticText *synchrBehText1 = new wxStaticText(synchronizationBehaviorPanel, wxID_ANY, L"控制可视化规则编辑的同步行为");
+	wxFont synchrBehFont1 = synchrBehText1->GetFont();
+	synchrBehFont1.SetPointSize(21);
+	synchrBehText1->SetFont(synchrBehFont1);
+	synchrBehText2 = new wxStaticText(synchronizationBehaviorPanel, wxID_ANY, L"先同步到规则输入框，再传给后端");
+	wxFont synchrBehFont2 = synchrBehText2->GetFont();
+	synchrBehFont2.SetPointSize(21);
+	synchrBehText2->SetFont(synchrBehFont2);
+	synchrBehBtn = new SequenceButton(synchronizationBehaviorPanel, frames, true); // 默认开启
+	synchrBehBtn->Bind(wxEVT_BUTTON, &MainFrame::OnSynchrBehClicked, this);
+	synchronizationBehaviorSizer->Add(synchrBehText1, 0, wxEXPAND | wxALL, 10);
+	synchronizationBehaviorSizer->Add(synchrBehText2, 0, wxEXPAND | wxALL, 10);
+	synchronizationBehaviorSizer->AddStretchSpacer();
+	synchronizationBehaviorSizer->Add(synchrBehBtn, 0, wxEXPAND | wxALL, 10);
+	synchronizationBehaviorPanel->SetSizer(synchronizationBehaviorSizer);
+	
+
 	// 导出日志
 	ExportLogPanel = new wxPanel(SetUpPanel, wxID_ANY);
 	ExportLogPanel->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, 1.5f));
@@ -706,20 +761,16 @@ MainFrame::MainFrame(const wxString &title)
 	SetUpSizer->Add(SetTitleColourPanel, 0, wxEXPAND | wxALL, 10);
 	SetUpSizer->Add(SetThemeColourPanel, 0, wxEXPAND | wxALL, 10);
 	SetUpSizer->Add(AdvancedSettingPanel, 0, wxEXPAND | wxTOP | wxBOTTOM, 10);
+	SetUpSizer->Add(visualizationRultPanel, 0, wxEXPAND | wxALL, 10);
+	SetUpSizer->Add(synchronizationBehaviorPanel, 0, wxEXPAND | wxALL, 10);
 	SetUpSizer->Add(ExportLogPanel, 0, wxEXPAND | wxALL, 10);
 	ExportLogPanel->Hide(); // 默认隐藏，点击高级设置后显示
-
-	// 临时测试按钮：打开“添加规则”子窗口（验证后可移除）
-	wxButton *openAddRultBtn = new wxButton(SetUpPanel, wxID_ANY, L"打开添加规则");
-	openAddRultBtn->Bind(wxEVT_BUTTON, [this](wxCommandEvent &)
-						 {
-		addRult *dlg = new addRult(this);
-		dlg->SetSize(600, 800);
-		dlg->Center();
-		dlg->Show(); });
-	SetUpSizer->Add(openAddRultBtn, 0, wxEXPAND | wxALL, 10);
+	visualizationRultPanel->Hide();
+	synchronizationBehaviorPanel->Hide();
 
 	SetUpPanel->SetSizer(SetUpSizer);
+
+
 
 	// Infor界面
 	wxBoxSizer *InforSizer = new wxBoxSizer(wxVERTICAL);
@@ -967,12 +1018,9 @@ void MainFrame::OnToggle(wxCommandEvent &evt)
 	}
 	if (ExportLogPanel)
 		ExportLogPanel->Show(AdvancedSettingStatus);
-	// 刷新SetUp页（第2页）布局与滚动区域
-	if (wxScrolledWindow *setUp = dynamic_cast<wxScrolledWindow *>(simpleBook->GetPage(2)))
-	{
-		setUp->Layout();
-		setUp->FitInside();
-	}
+	if (visualizationRultPanel)
+		visualizationRultPanel->Show(AdvancedSettingStatus);
+	UpdateSynchronizationBehaviorPanel(); // 内部同时刷新SetUp页
 }
 
 void MainFrame::OnExportLogFile(wxFileDirPickerEvent &evt)
@@ -1250,6 +1298,50 @@ void MainFrame::ApplyColours()
 		if (p.first)
 			p.first->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, p.second));
 	Refresh(); // 触发整窗重绘
+}
+
+void MainFrame::OnSetvisualizationRultClicked(wxCommandEvent &evt)
+{
+	if (openAddRultBtn->GetState()) {
+		visualizationRult = true;
+		AddRultButton->Show(true);
+	} else {
+		visualizationRult = false;
+		AddRultButton->Show(false);
+	}
+	if (AddRultButton->GetParent())
+		AddRultButton->GetParent()->Layout();
+	Layout();
+	UpdateSynchronizationBehaviorPanel();
+}
+
+void MainFrame::OnSynchrBehClicked(wxCommandEvent &evt)
+{
+	synchronizationBehavior = synchrBehBtn->GetState();
+	if (synchrBehBtn && synchrBehText2)
+	{
+		if (synchronizationBehavior)
+			synchrBehText2->SetLabel(L"先同步到规则输入框，再传给后端");
+		else
+			synchrBehText2->SetLabel(L"仅静默传给后端");
+	}
+}
+
+void MainFrame::UpdateSynchronizationBehaviorPanel()
+{
+	if (synchronizationBehaviorPanel)
+		synchronizationBehaviorPanel->Show(AdvancedSettingStatus && openAddRultBtn && openAddRultBtn->GetState());
+	// 刷新SetUp页（第2页）布局与滚动区域
+	if (wxScrolledWindow *setUp = dynamic_cast<wxScrolledWindow *>(simpleBook->GetPage(2)))
+	{
+		setUp->Layout();
+		setUp->FitInside();
+	}
+}
+
+void MainFrame::ApplyVisualRules(const wxString &rulesText)
+{
+	mappingRult::Transfer(rulesText, synchronizationBehavior, RulesInput, m_rulesFilePath);
 }
 
 /**

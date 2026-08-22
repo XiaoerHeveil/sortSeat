@@ -46,7 +46,6 @@ add_library(sorSeatCore STATIC
     sorSeatUI/SeatPanel.cpp
     sorSeatUI/SequenceButton.cpp
     sorSeatUI/sorButton.cpp
-    sorSeatUI/addRult.cpp
 )
 
 target_include_directories(sorSeatCore PUBLIC
@@ -70,6 +69,8 @@ add_executable(sorSeatUI WIN32
     sorSeatUI/addRult.cpp
     sorSeatUI/presetsRult.h
     sorSeatUI/presetsRult.cpp
+    sorSeatUI/mappingRult.h
+    sorSeatUI/mappingRult.cpp
 )
 target_link_libraries(sorSeatUI PRIVATE sorSeatCore)
 target_compile_definitions(sorSeatUI PRIVATE ${wxWidgets_DEFINITIONS})
