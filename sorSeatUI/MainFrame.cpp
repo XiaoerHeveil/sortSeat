@@ -3,6 +3,7 @@
 #include "SequenceButton.h"
 #include "IpcClient.h"
 #include "Validate.h"
+#include "addRult.h"
 #include <wx/dcmemory.h>
 #include <wx/spinctrl.h>
 #include <wx/filename.h>
@@ -707,6 +708,17 @@ MainFrame::MainFrame(const wxString &title)
 	SetUpSizer->Add(AdvancedSettingPanel, 0, wxEXPAND | wxTOP | wxBOTTOM, 10);
 	SetUpSizer->Add(ExportLogPanel, 0, wxEXPAND | wxALL, 10);
 	ExportLogPanel->Hide(); // 默认隐藏，点击高级设置后显示
+
+	// 临时测试按钮：打开“添加规则”子窗口（验证后可移除）
+	wxButton *openAddRultBtn = new wxButton(SetUpPanel, wxID_ANY, L"打开添加规则");
+	openAddRultBtn->Bind(wxEVT_BUTTON, [this](wxCommandEvent &)
+						 {
+		addRult *dlg = new addRult(this);
+		dlg->SetSize(600, 800);
+		dlg->Center();
+		dlg->Show(); });
+	SetUpSizer->Add(openAddRultBtn, 0, wxEXPAND | wxALL, 10);
+
 	SetUpPanel->SetSizer(SetUpSizer);
 
 	// Infor界面
@@ -759,7 +771,7 @@ MainFrame::MainFrame(const wxString &title)
 	projectAddressSizer->Add(githubRepositoryURL, 0, wxEXPAND | wxLEFT | wxTOP, 20);
 	projectAddressPanel->SetSizer(projectAddressSizer);
 
-	// 声明作者(并附赠跳转作者视频平台链接，目前暂时指向自己)
+	// 声明作者
 	authorPanel = new wxPanel(InforPanel, wxID_ANY);
 	authorPanel->SetBackgroundColour(AdjustBrightnessByPercent(themeColour, 1.6f));
 	themeColourPanels.push_back({authorPanel, 1.6f});
